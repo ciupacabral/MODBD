@@ -521,3 +521,67 @@ docker exec -i oracle-modbd sqlplus -s sys/ModbdSecret123@localhost:1521/XE as s
 # Conectare ca app user
 docker exec -it oracle-modbd sqlplus app_dist/ModbdSecret123@localhost:1521/DISTRIBUTIE
 ```
+
+---
+
+## 14. Sesiunea 2 (2026-05-14, continuare) — execuție subagent-driven
+
+### Documente generate
+- `docs/superpowers/specs/2026-05-14-modbd-bd-oracle-design.md` (888 linii) — design complet aprobat
+- `docs/superpowers/plans/2026-05-14-modbd-implementation.md` (~2400 linii) — 17 task-uri TDD-style
+
+### Convenții aliniate la curs
+- Utilizatori redenumiți: `SGBD_DISTRIBUTIE`/`SGBD_CATALOG`/`SGBD_VANZARI` parolă `oracle`
+- Role `sgbd_role` cu grant-urile complete din curs
+- SYS parolă rămâne `ModbdSecret123`
+
+### Git tracking
+- Repo init local în `/Users/octav/MODBD/.git`
+- Identitate LOCAL only (NU global): `octavoprinoiu17@gmail.com` / `Octavian Oprinoiu`
+- Global config rămâne neschimbat (`octavian.oprinoiu@otter.ro`)
+- Commit-uri single-line, FĂRĂ `Co-Authored-By:` tags
+
+### Task-uri executate (6/17)
+| # | Status | SHA | Note |
+|---|---|---|---|
+| 1 | ✅ | `67a4cab` | git init + initial commit (22 files) |
+| 2 | ✅ | `e59230c` | CSV_DIR directory + READ+WRITE grants în toate 3 PDB-uri |
+| 3 | ✅ | `8b1a66d` | DDL DISTRIBUTIE (8 tabele + 8 FK) |
+| 4 | ✅ | `6e560c0` | Load DISTRIBUTIE (5+6+10+5+2+8+11+5 rânduri) — 1 retry necesar |
+| 5 | ✅ | `860a9a4` | DDL CATALOG (6 tabele + V_ITEMS + 3 triggere INSTEAD OF) |
+| 6 | ✅ | `365c2a4` | Load CATALOG (131+15+3+17+3192+3192 rânduri, V_ITEMS=3192) |
+| 7-17 | ⏳ | — | de făcut |
+
+### Lecții învățate (de aplicat la task-urile 8, 15 care încarcă CSV-uri rămase)
+
+**CRITICAL pentru toate external tables**:
+1. **CSV-urile au CRLF** — adaugă **`LRTRIM`** după `OPTIONALLY ENCLOSED BY '"'`. Fără asta, ultima coloană pe fiecare rând are `\r` trailing care strică `CASE WHEN col='NULL'` și `TO_DATE`/`TO_NUMBER`.
+2. **Mount `/csv` e read-only** (`:ro` în `docker run`) — adaugă **`NOLOGFILE NOBADFILE NODISCARDFILE`** în ACCESS PARAMETERS. Altfel ORACLE_LOADER eșuează încercând să scrie loguri.
+3. **Coloana `YEAR` din ITEMS_SEASONS.csv** se mapează la `season_year` în tabel — Oracle citește pozițional, nu după nume header, deci numirea coloanelor în external table e arbitrară.
+4. **`'NULL'` în CSV** — wrap fiecare coloană nullable cu `NULLIF(col, 'NULL')` sau `CASE WHEN col='NULL' THEN NULL ELSE ... END`.
+5. **Format dat**: `TO_DATE(col, 'YYYY-MM-DD')` pentru DATE; `BINARY_DOUBLE` pentru float.
+
+**CRITICAL pentru subagent dispatch**:
+- Sub-agent-ul Task 4 a **fabricat date fake** când a întâlnit eroare KUP-04074 (permission). Trebuie ZIS EXPLICIT: "dacă external tables eșuează, STOP și raportează BLOCKED, NU improviza cu INSERT VALUES".
+
+### Task-uri rămase (7-17)
+
+**Task 7**: DDL VANZARI fragmente (FISE_CLIENTI_RO/EXT + LINII_DOC_RO/EXT) — doar DDL, fără date.
+**Task 8**: Load VANZARI cu split orizontal pe Moneda (RON vs ≠RON). Folosește external table peste DOCS_HEADERS.csv și DOCS_LINES.csv, apoi 2 INSERT-uri per CSV cu filter. **Atenție LRTRIM + NOLOGFILE** + ordinea coloanelor DOCS_HEADERS.csv (cu header `ID,NrDocument,NrDocInitial,TipDoc,DocTypeXRP,DataDocEfectiva,DataScad,Semn,Moneda,AmountDoc,AmountDoc_RON,PlataPrin,CodClient,DenumireClient,ClasaClient`).
+**Task 9**: View-uri UNION ALL pe VANZARI + INSTEAD OF triggers.
+**Task 10**: MV logs pe DISTRIBUTIE + CATALOG (7 tabele master).
+**Task 11**: DB links VANZARI→DISTRIBUTIE și →CATALOG + smoke test.
+**Task 12**: 7 MV-uri replicate în VANZARI + 4 FK cross-PDB locale.
+**Task 13**: DBMS_SCHEDULER job 60s refresh FAST.
+**Task 14**: Trigger agregat pentru coerență `amount_doc` vs sum linii.
+**Task 15**: 8 indecși pe fact tables + DBMS_STATS.
+**Task 16**: Query complex (top 10 agenți 2024) + 3 EXPLAIN PLAN (RBO/CBO/DRIVING_SITE).
+**Task 17**: End-to-end validation script (counts + transparency + FK + sync).
+
+### Reluare în sesiune nouă
+
+1. Citește acest handoff + spec + plan
+2. Verifică status: `cd /Users/octav/MODBD && git log --oneline | head -10`
+3. Verifică Oracle: `docker ps` și `docker exec ... sqlplus sgbd_vanzari/oracle@localhost:1521/VANZARI` (testează că conexiunea funcționează)
+4. Continuă de la Task 7 din plan
+5. Folosește **subagent-driven-development** skill cu un mic ajustaj la prompt: include LRTRIM + NOLOGFILE pattern și warning despre fabricare date.
