@@ -524,4 +524,21 @@ Compararea concretă a planurilor de execuție (RBO vs. CBO vs. DRIVING_SITE), c
 
 # Bibliografie și notă de transparență
 
-<!-- Conținut Task 18. -->
+## Surse tehnice și implementare proprie
+
+Acest raport descrie un sistem implementat de autor în perioada 2026-05-14 ÷ 2026-05-16, sub formă de 18 commit-uri în repository-ul local de proiect. Implementarea backend (DDL Oracle, scripturi de încărcare, view-uri de transparență, MV-uri, triggere, indecși, query-uri optimizate) este conținută în directorul `modbd/oracle/` și a fost validată end-to-end prin script-ul `test_validation.sql`.
+
+Documentele anexe la prezentul raport (parte integrantă a livrabilului proiectului):
+
+- Fișierul-sursă SQL/PL-SQL: `<<NUME_ECHIPA>>_Oprinoiu_Octavian_Sursa.txt`
+- Print-screen-urile rulării în Oracle: incluse în fișierul proiect integrat
+- Raportul modulului de implementare backend: `<<NUME_ECHIPA>>_Oprinoiu_Octavian_Proiect.docx`
+
+## Notă de transparență privind utilizarea AI
+
+Acest raport a fost redactat de autor, pe baza implementării realizate, a codului scris și a erorilor depanate în timpul celor 17 task-uri tehnice ale modulului 2. Asistența unui sistem AI a fost folosită în două situații, ambele declarate explicit:
+
+1. **Anonimizarea datelor sursă** — înlocuirea codurilor reale de client (numere cu 9 cifre, identificabile public) cu identificatori fictivi CLI000001..CLI000010, și generarea numelor fictive pentru clienți și agenți. Mapping-ul este determinist și aplicat consistent în toate cele 15 fișiere CSV. Această operațiune a fost necesară pentru protecția datelor cu caracter personal, conform politicilor de confidențialitate ale sursei reale a datelor.
+2. **Verificare gramaticală și structurare** — pentru corectarea acordurilor, punctuație, structura unor paragrafe și consecvența terminologică. Conținutul tehnic (deciziile arhitecturale, algoritmii, formulele, codul SQL, analizele) este produs de autor pe baza implementării proprii.
+
+Sistemul AI nu a generat: deciziile de fragmentare, algoritmii BEA/COM_MIN aplicați, codul SQL, structura matricilor de utilizare, alegerile arhitecturale (3 PDB-uri vs. alte alternative), schema relațională, sau analizele de optimizare.
