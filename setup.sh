@@ -5,6 +5,7 @@
 # Utilizare:
 #   ./setup.sh              # setup complet (fresh install)
 #   ./setup.sh --clean      # sterge containerul existent + setup complet
+#   ./setup.sh --resume     # ruleaza doar pasii de schema (container deja ready)
 #   ./setup.sh --validate   # ruleaza doar testele end-to-end
 #   ./setup.sh --stop       # opreste containerul (date persistente)
 #   ./setup.sh --start      # porneste containerul oprit
@@ -56,6 +57,13 @@ container_running() {
   docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}\$"
 }
 
+# Check if DB is ready, isolating from pipefail (docker logs may SIGPIPE on early grep exit)
+db_is_ready() {
+  local logs
+  logs=$(docker logs "$CONTAINER" 2>&1) || return 1
+  grep -q "DATABASE IS READY TO USE" <<< "$logs"
+}
+
 # --- Actions ---
 action_clean() {
   log "Cleanup: sterg containerul si volumul existente..."
@@ -79,17 +87,20 @@ action_create_container() {
     "$IMAGE"
 
   ok "Container creat. Astept ca BD-ul sa fie gata..."
+  log "Initializarea la rece poate dura 10-20 minute (creare datafiles + PDB seed)."
   local attempts=0
-  local max_attempts=120  # 10 minute maxim
-  until docker logs "$CONTAINER" 2>&1 | grep -q "DATABASE IS READY TO USE"; do
+  local max_attempts=240  # 20 minute maxim (init la rece e lent)
+  until db_is_ready; do
     attempts=$((attempts + 1))
     if [ "$attempts" -ge "$max_attempts" ]; then
-      err "Timeout asteptand Oracle. Verifica: docker logs $CONTAINER"
+      err "Timeout asteptand Oracle dupa $((max_attempts * 5)) secunde."
+      err "Verifica: docker logs $CONTAINER"
+      err "Daca BD-ul e doar mai lent, poti relua cu: ./setup.sh --resume"
       exit 1
     fi
     sleep 5
-    if [ $((attempts % 6)) -eq 0 ]; then
-      log "  ... inca astept ($((attempts * 5)) secunde)"
+    if [ $((attempts % 12)) -eq 0 ]; then
+      log "  ... inca astept ($((attempts * 5)) secunde / max $((max_attempts * 5)))"
     fi
   done
   ok "BD-ul Oracle e gata."
@@ -133,7 +144,10 @@ action_stop() {
 run_sql() {
   # $1 = connect string (ex: sys/PASS@//localhost:1521/XE as sysdba)
   # $2 = path to SQL file (inside container, ex: /csv/oracle/01_create_pdbs.sql)
-  docker exec -i "$CONTAINER" bash -c "echo -e 'WHENEVER SQLERROR EXIT SQL.SQLCODE\n@${2}\nEXIT' | sqlplus -L -S '${1}'"
+  # SET SQLBLANKLINES ON: permite linii blank in interiorul statement-urilor SQL
+  #   (necesar pentru CREATE VIEW cu UNION ALL formatat cu blank lines).
+  # WHENEVER SQLERROR EXIT: opreste sqlplus la prima eroare ORA-* si propaga exit code.
+  docker exec -i "$CONTAINER" bash -c "echo -e 'SET SQLBLANKLINES ON\nWHENEVER SQLERROR EXIT SQL.SQLCODE\n@${2}\nEXIT' | sqlplus -L -S '${1}'"
 }
 
 run_sys_sysdba() {
@@ -245,6 +259,19 @@ main() {
       action_validate
       echo ""
       ok "Setup complet cu cleanup. BD-ul distribuit MODBD ruleaza pe localhost:1521."
+      ;;
+    --resume)
+      if ! container_running; then
+        err "Containerul nu ruleaza. Foloseste: ./setup.sh --start"
+        exit 1
+      fi
+      if ! db_is_ready; then
+        err "BD-ul Oracle nu pare gata in containerul existent."
+        err "Verifica: docker logs $CONTAINER"
+        exit 1
+      fi
+      action_setup_schema
+      action_validate
       ;;
     --validate)
       if ! container_running; then
