@@ -89,29 +89,154 @@ Aplicația-client se conectează la `VANZARI` și operează asupra view-urilor d
 
 # 4. Argumentarea deciziei de fragmentare
 
-<!-- Conținut Task 12. Punctaj: 3p (1p H primară + 0.5p H derivată + 1p V); H primară și H derivată au obținerea fragmentelor obligatorie. -->
+Decizia de fragmentare urmează trei criterii: (1) maximizarea local-ității de acces pentru workload-ul dominant, (2) reducerea volumului transferat pe rețea în query-urile distribuite, (3) coerența semantică între fragmente și unitățile de business reprezentate. Aplicăm trei tehnici: fragmentare orizontală primară (pe `FISE_CLIENTI`), fragmentare orizontală derivată (pe `LINII_DOC`) și fragmentare verticală pe `MS_ITEMS`.
 
 ## 4.1. Fragmentare orizontală primară pe FISE_CLIENTI
 
 ### 4.1.1. Workload și predicate candidate
 
+Volumul observat în datele reale arată că documentele se grupează natural pe două dimensiuni candidate pentru fragmentare: anul calendaristic și moneda. Distribuția aproximativă în setul de 2.048 de documente este:
+
+| Dimensiune | Valori distincte | Distribuție (aproximativă) |
+|---|---|---|
+| `data_doc_efectiva` (an) | 2021, 2022, 2023, 2024, 2025, 2026 | relativ uniformă pe ultimii 4 ani |
+| `moneda` | RON, EUR, CZK, USD | ~76% RON, ~24% non-RON (EUR + CZK + rar USD) |
+
+Fragmentarea pe an ar produce 6 fragmente, dintre care două (2021, 2026) au volum mic — pattern neuniform. Mai grav, criteriul anului nu se corelează cu nicio decizie de business (toate zonele scriu documente în toți anii).
+
+Fragmentarea pe monedă, în schimb, se corelează cu un criteriu geografic puternic: documentele în RON aparțin în proporție covârșitoare zonelor interne (ARDEAL, MOLDOVA, SUD), iar cele în EUR/CZK aparțin zonelor externe (SLOVACIA, CEHIA). Aceasta face fragmentarea pe monedă atât eficientă tehnic (volume echilibrate ~3:1), cât și semnificativă semantic.
+
 ### 4.1.2. Aplicarea algoritmului COM_MIN
 
+Algoritmul COM_MIN identifică un set minim și complet de predicate pentru fragmentare, pornind de la predicatele simple candidate. Mulțimea inițială:
+
+$$\mathit{Pr} = \{p_1: \texttt{moneda} = \text{'RON'},\ p_2: \texttt{moneda} = \text{'EUR'},\ p_3: \texttt{moneda} = \text{'CZK'},\ p_4: \texttt{moneda} = \text{'USD'}\}$$
+
+**Pasul 1 — Test de relevanță**. Un predicat $p_i$ este relevant dacă există un acces la datele filtrate de $p_i$ care răspunde diferit de cel filtrat de $\neg p_i$. Pentru $p_1$: workload-ul de raportare per zonă filtrează documentele RON (operațiuni domestice) separat de cele non-RON (operațiuni externe). Diferența numerică este semnificativă (~1555 vs. ~493 de documente), iar predicatul devine util pentru a co-localiza documentele cu zonele corespunzătoare. Aceeași logică validează relevanța lui $p_2$, $p_3$.
+
+Predicatul $p_4$ (`moneda = 'USD'`) are mai puțin de 1% din volum și nu apare ca filtru frecvent în workload-ul real. Îl considerăm marginal — îl absorbim în clusterul „non-RON" împreună cu EUR și CZK.
+
+**Pasul 2 — Test de completitudine**. Un set de predicate este complet dacă reuniunea lor acoperă întreg domeniul. Verificare empirică:
+
+```sql
+SELECT DISTINCT moneda FROM fise_clienti;
+-- returnează exact 4 valori: RON, EUR, CZK, USD
+```
+
+Predicatele $p_1 \vee p_2 \vee p_3 \vee p_4$ acoperă întreg domeniul `moneda` ⇒ set complet.
+
+**Pasul 3 — Minimalitate și simplificare**. Setul $\{p_1, p_2, p_3, p_4\}$ este minimal (fără redundanță), dar generează 4 fragmente. Aplicând criteriul de coerență geografică (RO domestic vs. extern), fuzionăm $p_2$, $p_3$, $p_4$ într-un singur predicat compus „non-RON". Această fuziune este o decizie de design care simplifică modelul în detrimentul granularității — argumentată prin faptul că tehnicile de optimizare ulterioare (raportarea per țară) pot folosi filtre suplimentare în interiorul fragmentului non-RON, fără să justifice fragmente fizice separate pentru EUR, CZK și USD.
+
+Setul final de predicate compuse minimale și complete:
+
+$$M = \{m_1: \texttt{moneda} = \text{'RON'},\ m_2: \texttt{moneda} \neq \text{'RON'}\}$$
+
 ### 4.1.3. Fragmentele orizontale primare obținute
+
+$$\mathit{FISE\_CLIENTI\_RO} = \sigma_{\texttt{moneda}='RON'}(\mathit{FISE\_CLIENTI})$$
+$$\mathit{FISE\_CLIENTI\_EXT} = \sigma_{\texttt{moneda} \neq 'RON'}(\mathit{FISE\_CLIENTI})$$
+
+Volume efective după split: 1.555 documente în `FISE_CLIENTI_RO`, 493 în `FISE_CLIENTI_EXT` (total 2.048). Fragmentele se stochează în nodul `VANZARI` și se accesează unitar prin view-ul `V_FISE_CLIENTI = FISE_CLIENTI_RO UNION ALL FISE_CLIENTI_EXT`.
 
 ## 4.2. Fragmentare orizontală derivată pe LINII_DOC
 
 ### 4.2.1. Legătura între relații prin cheie compusă
 
+`LINII_DOC` este o relație member al cărei owner este `FISE_CLIENTI` — fiecare linie aparține unui și numai unui document, iar legătura se realizează prin cheia externă compusă $(nr\_document, doc\_type\_xrp)$. Întrucât owner-ul este deja fragmentat orizontal, este natural ca member-ul să-l urmeze (fragmentare derivată), pentru a evita join-uri cross-fragment costisitoare.
+
+Graful de fragmentare este simplu: fiecare linie are exact un header. Această condiție este necesară pentru ca disjuncția fragmentelor derivate să fie automată — niciun tuplu de linie nu poate aparține simultan la două fragmente diferite.
+
 ### 4.2.2. Fragmentele orizontale derivate obținute
+
+Aplicăm operatorul de semijoin față de cele două fragmente ale owner-ului:
+
+$$\mathit{LINII\_DOC\_RO} = \mathit{LINII\_DOC} \ltimes \mathit{FISE\_CLIENTI\_RO}$$
+$$\mathit{LINII\_DOC\_EXT} = \mathit{LINII\_DOC} \ltimes \mathit{FISE\_CLIENTI\_EXT}$$
+
+Semijoin-ul propagă criteriul de selecție de la owner la member fără a duplica atribute. Volumele efective: 3.806 linii în `LINII_DOC_RO`, 1.712 în `LINII_DOC_EXT` (total 5.518 — din 5.598 inițiale au fost eliminate 80 linii orfane, adică linii al căror `item_code` nu mai avea corespondent în `MS_ITEMS` în setul de date selectat; eliminarea s-a făcut la enforcement-ul cheii externe către `MV_ITEMS_CORE`).
+
+Fragmentele se stochează tot în nodul `VANZARI` și se accesează unitar prin view-ul `V_LINII_DOC = LINII_DOC_RO UNION ALL LINII_DOC_EXT`. Cheia externă către owner se păstrează intra-fragment (`LINII_DOC_RO` referențiază `FISE_CLIENTI_RO`, `LINII_DOC_EXT` referențiază `FISE_CLIENTI_EXT`), ceea ce permite Oracle să optimizeze join-urile prin partition-wise execution natural.
 
 ## 4.3. Fragmentare verticală pe ITEMS (algoritmul BEA)
 
 ### 4.3.1. Workload și matricea de utilizare a atributelor
 
+Tabela `MS_ITEMS` are 15 atribute, dintre care `id` (cheia primară) va fi replicat în ambele fragmente pentru a permite reconstrucția prin join. Restul de 14 atribute sunt candidate pentru BEA.
+
+Pentru aplicarea algoritmului avem nevoie de un workload reprezentativ. Cinci tipuri de query-uri reprezintă cazurile dominante:
+
+| Cod | Aplicație | Frecvență (acc/lună) |
+|---|---|---|
+| $q_1$ | Catalog browse — agenții consultă produsele cu identificare și clasificare | 25 |
+| $q_2$ | Insert linie factură — necesită `item_code` și `item_name` pentru validare | 85 |
+| $q_3$ | Raport top vânzări (lunar) — agregare pe categorie | 1 |
+| $q_4$ | Editare fișă produs (admin) — descriere, TVA, barcode, greutate, UM | 25 |
+| $q_5$ | Update cost & furnizor (per produs) — cost și cod furnizor | 30 |
+
+Frecvențele sunt derivate empiric din volumul real (5.598 linii într-o perioadă de 66 de luni dă o medie de ~85 inserări/lună) și completate cu estimări pentru workload-ul de gestiune.
+
+Matricea de utilizare $VA$ (1 dacă atributul este accesat de query, 0 altfel). Notăm atributele non-cheie cu indici $A_1$..$A_{14}$ în ordinea: `item_code`, `item_name`, `item_description`, `brand_id`, `season_id`, `item_type_id`, `category_id`, `active`, `vat`, `last_cost_price`, `main_barcode`, `supplier_code`, `weight`, `um`.
+
+|       | $A_1$ | $A_2$ | $A_3$ | $A_4$ | $A_5$ | $A_6$ | $A_7$ | $A_8$ | $A_9$ | $A_{10}$ | $A_{11}$ | $A_{12}$ | $A_{13}$ | $A_{14}$ |
+|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|----------|----------|----------|----------|----------|
+| $q_1$ | 1     | 1     | 0     | 1     | 1     | 1     | 1     | 1     | 0     | 0        | 0        | 0        | 0        | 0        |
+| $q_2$ | 1     | 1     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0        | 0        | 0        | 0        | 0        |
+| $q_3$ | 1     | 1     | 0     | 0     | 0     | 0     | 1     | 0     | 0     | 0        | 0        | 0        | 0        | 0        |
+| $q_4$ | 0     | 1     | 1     | 0     | 0     | 0     | 0     | 0     | 1     | 0        | 1        | 0        | 1        | 1        |
+| $q_5$ | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 0     | 1        | 0        | 1        | 0        | 0        |
+
 ### 4.3.2. Aplicarea algoritmului BEA și algoritmul PART
 
+Afinitatea între două atribute $A_i$ și $A_j$ se calculează prin formula:
+
+$$\mathit{aff}(A_i, A_j) = \sum_{q \mid \mathit{use}(q, A_i) = \mathit{use}(q, A_j) = 1} \mathit{acc}(q)$$
+
+Două perechi exemplificative:
+
+**Perechea ($A_1$, $A_2$) = (item_code, item_name)**: ambele atribute sunt accesate de $q_1$, $q_2$ și $q_3$, deci:
+$$\mathit{aff}(A_1, A_2) = \mathit{acc}(q_1) + \mathit{acc}(q_2) + \mathit{acc}(q_3) = 25 + 85 + 1 = 111$$
+Aceasta este afinitatea maximă din toată matricea — codul și numele sunt aproape întotdeauna citite împreună.
+
+**Perechea ($A_1$, $A_{13}$) = (item_code, weight)**: niciun query nu le accesează simultan, deci:
+$$\mathit{aff}(A_1, A_{13}) = 0$$
+Afinitate zero — `item_code` ține de identificare/clasificare, `weight` ține de atribute fizice administrative.
+
+După calculul tuturor celor 91 de perechi posibile și permutarea coloanelor matricei AA (criteriu: maximizarea contribuției globale), matricea CA permutată evidențiază clar două clustere de atribute cu afinitate intra-grup ridicată și afinitate inter-grup scăzută:
+
+- **Cluster CORE**: $\{A_1, A_2, A_4, A_5, A_6, A_7, A_8\}$ — `item_code`, `item_name`, `brand_id`, `season_id`, `item_type_id`, `category_id`, `active`
+- **Cluster EXTRA**: $\{A_3, A_9, A_{10}, A_{11}, A_{12}, A_{13}, A_{14}\}$ — `item_description`, `vat`, `last_cost_price`, `main_barcode`, `supplier_code`, `weight`, `um`
+
+Pentru a alege punctul concret de bipartiție, aplicăm algoritmul PART, care maximizează funcția obiectiv:
+
+$$z = \mathit{CTQ} \cdot \mathit{CBQ} - \mathit{COQ}^2$$
+
+unde $\mathit{CTQ}$ = suma frecvențelor query-urilor care accesează doar atribute din clusterul CORE, $\mathit{CBQ}$ = suma pentru clusterul EXTRA, iar $\mathit{COQ}$ = suma pentru query-urile care accesează atribute din ambele clustere. Pentru bipartiția propusă:
+
+- $\mathit{TQ} = \{q_1, q_2, q_3\}$ — accesează doar atribute CORE → $\mathit{CTQ} = 25 + 85 + 1 = 111$
+- $\mathit{BQ} = \{q_5\}$ — accesează doar atribute EXTRA → $\mathit{CBQ} = 30$
+- $\mathit{OQ} = \{q_4\}$ — accesează atribute din ambele clustere → $\mathit{COQ} = 25$
+- $z = 111 \times 30 - 25^2 = 3.330 - 625 = \mathbf{2.705}$ — maxim global.
+
 ### 4.3.3. Fragmentele verticale obținute
+
+$$\mathit{ITEMS\_CORE} = \pi_{id, A_1, A_2, A_4, A_5, A_6, A_7, A_8}(\mathit{MS\_ITEMS})$$
+$$\mathit{ITEMS\_EXTRA} = \pi_{id, A_3, A_9, A_{10}, A_{11}, A_{12}, A_{13}, A_{14}}(\mathit{MS\_ITEMS})$$
+
+Cheia primară `id` este replicată în ambele fragmente pentru a permite reconstrucția prin join. Volum: 3.192 de rânduri în fiecare fragment (egale, deoarece fragmentarea verticală partiționează atribute, nu tupluri).
+
+Fragmentele se stochează în nodul `CATALOG` și se accesează unitar prin view-ul:
+
+```sql
+CREATE OR REPLACE VIEW V_ITEMS AS
+SELECT c.id, c.item_code, c.item_name, e.item_description,
+       c.brand_id, c.season_id, c.item_type_id, c.category_id,
+       e.vat, e.last_cost_price, e.main_barcode, e.supplier_code,
+       e.weight, e.um, c.active
+FROM   ITEMS_CORE c
+       JOIN ITEMS_EXTRA e ON e.id = c.id;
+```
+
+Pentru operațiile DML peste view, triggere `INSTEAD OF` rutează inserările/actualizările/ștergerile către cele două fragmente.
 
 # 5. Verificarea corectitudinii fragmentărilor
 
