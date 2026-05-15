@@ -334,15 +334,144 @@ Triggere INSTEAD OF pe `V_FISE_CLIENTI` și `V_LINII_DOC` rutează DML-ul către
 
 # 8. Constrângeri de integritate
 
-<!-- Conținut Task 16. Punctaj: 2p obligatoriu. -->
+Constrângerile de integritate acoperă patru categorii: unicitate, chei primare, chei externe și validări semantice. Pentru fiecare, distingem între nivelul local (intra-PDB) și nivelul global (cross-PDB).
 
 ## 8.1. Constrângeri de unicitate
 
+### 8.1.1. Unicitate locală
+
+Fiecare PDB are propriile constrângeri UK pentru atributele care identifică o entitate dincolo de cheia surogat numerică:
+
+| PDB | Tabel | UK |
+|---|---|---|
+| DISTRIBUTIE | `zone` | `cod_zona` |
+| DISTRIBUTIE | `agenti` | `cod_agent` |
+| DISTRIBUTIE | `clienti` | `cod_client` |
+| DISTRIBUTIE | `intervale_plata` | `den_interval` |
+| CATALOG | `brands` | `code` |
+| CATALOG | `items_category` | `code` |
+| CATALOG | `items_type` | `code` |
+| CATALOG | `items_seasons` | `code` |
+| CATALOG | `items_core` | `item_code` |
+| VANZARI | `fise_clienti_ro` | `(nr_document, doc_type_xrp)` |
+| VANZARI | `fise_clienti_ext` | `(nr_document, doc_type_xrp)` |
+
+### 8.1.2. Unicitate globală pe fragmente orizontale
+
+Pentru o relație fragmentată orizontal, cheia logică trebuie să rămână unică la nivel global, nu doar în interiorul fragmentului. Pentru `FISE_CLIENTI`, cheia logică este `(nr_document, doc_type_xrp)` și trebuie să fie unică între `FISE_CLIENTI_RO` și `FISE_CLIENTI_EXT`.
+
+Această unicitate globală este asigurată implicit prin construcție: predicatele de fragmentare sunt disjuncte (`moneda = 'RON'` ⊥ `moneda <> 'RON'`), deci un tuplu cu o anumită cheie logică nu poate exista simultan în ambele fragmente. Coroborat cu UK locală în fiecare fragment, cheia logică globală este unică prin design.
+
+Aceeași logică se aplică pentru `LINII_DOC` — cheia primară `id` este unică în fiecare fragment (`LINII_DOC_RO`, `LINII_DOC_EXT`), iar o linie aparține unui singur fragment (urmează owner-ul prin semijoin).
+
+### 8.1.3. Unicitate globală pe fragmente verticale
+
+Pentru fragmentarea verticală a `MS_ITEMS`, problema de unicitate are altă natură: atributul de identificare a produsului (`item_code`) trebuie să rămână unic global. Acest atribut este însă plasat doar în fragmentul `ITEMS_CORE` (nu este replicat în `ITEMS_EXTRA`), deci unicitatea sa locală în CORE este și globală.
+
+Cheia primară surogat `id` este replicată în ambele fragmente pentru a permite reconstrucția. Pentru a asigura că un anumit `id` nu există fără pereche în ambele fragmente, am definit FK-ul `ITEMS_EXTRA.id → ITEMS_CORE.id ON DELETE CASCADE`, care garantează corespondența 1:1 între fragmente.
+
 ## 8.2. Chei primare
+
+### 8.2.1. La nivel local
+
+Toate tabelele au cheie primară definită explicit prin constrângere `PRIMARY KEY` la create-time. În toate cazurile cu o singură excepție, PK-ul este un atribut surogat numeric (`id NUMBER(19)`). Excepția este `INTERVALE_PLATA_ZILE`, care folosește PK compus `(id_interval, per_zile)` — atributele cheii sunt semnificative din punct de vedere business (un interval poate avea mai multe perioade de zile distincte, fiecare cu propria denumire).
+
+Pentru `CLIENTI_CONTACTE`, PK-ul `cod_client` este simultan și FK către `CLIENTI.cod_client` — relație 1:1 strictă (un client are un singur contact).
+
+### 8.2.2. La nivel global pe fragmente orizontale
+
+Pentru `FISE_CLIENTI` reconstituit prin `V_FISE_CLIENTI`, cheia primară globală este `id` — unic în fiecare fragment și unic global prin convenția de generare a ID-urilor (secvențe care nu se suprapun). Acest invariant este menținut aplicativ; o verificare suplimentară poate fi adăugată ca trigger global care interzice insert-uri cu `id` deja prezent în fragmentul opus (acceptabil pentru volumul implicat).
+
+Pentru `LINII_DOC` reconstituit prin `V_LINII_DOC`, cheia primară globală `id` este unică prin construcție (semijoin-ul nu duplică tupluri).
+
+Pentru `MS_ITEMS` reconstituit prin `V_ITEMS`, cheia primară globală este `id` — unică în `ITEMS_CORE` (UK local), și replicată în `ITEMS_EXTRA` prin FK.
 
 ## 8.3. Chei externe
 
+### 8.3.1. La nivel local (intra-PDB)
+
+| PDB | FK | Referință |
+|---|---|---|
+| DISTRIBUTIE | `clienti.id_zona` | `zone.id` |
+| DISTRIBUTIE | `clienti_contacte.cod_client` | `clienti.cod_client` |
+| DISTRIBUTIE | `zone_agenti.id_zona` | `zone.id` |
+| DISTRIBUTIE | `zone_agenti.id_agent` | `agenti.id` |
+| DISTRIBUTIE | `zone_intervale_plata.id_zona` | `zone.id` |
+| DISTRIBUTIE | `zone_intervale_plata.id_interval` | `intervale_plata.id` |
+| DISTRIBUTIE | `intervale_plata_zile.id_interval` | `intervale_plata.id` |
+| DISTRIBUTIE | `zone.parent_zona_id` (self-FK) | `zone.id` |
+| CATALOG | `items_core.brand_id` | `brands.id` |
+| CATALOG | `items_core.season_id` | `items_seasons.id` |
+| CATALOG | `items_core.item_type_id` | `items_type.id` |
+| CATALOG | `items_core.category_id` | `items_category.id` |
+| CATALOG | `items_extra.id` (PK = FK) | `items_core.id` ON DELETE CASCADE |
+| VANZARI | `linii_doc_ro.(nr_document, doc_type_xrp)` | `fise_clienti_ro.(nr_document, doc_type_xrp)` |
+| VANZARI | `linii_doc_ext.(nr_document, doc_type_xrp)` | `fise_clienti_ext.(nr_document, doc_type_xrp)` |
+
+### 8.3.2. Pentru relații stocate în baze de date diferite
+
+Cheile externe cross-PDB nu pot fi declarate direct între tabele din PDB-uri diferite (limitare Oracle). Soluția adoptată: replicăm tabelele referențiate ca materialized views în PDB-ul referențiator și definim FK-urile către aceste MV-uri. Sincronizarea MV-urilor (job @ 60s) garantează că enforcement-ul FK reflectă starea master cu un lag controlat.
+
+Cele 4 FK-uri cross-PDB implementate:
+
+| FK | Referință (master) | Reference locală (MV) |
+|---|---|---|
+| `fise_clienti_ro.cod_client` | `clienti@DISTRIBUTIE.cod_client` | `mv_clienti.cod_client` |
+| `fise_clienti_ext.cod_client` | `clienti@DISTRIBUTIE.cod_client` | `mv_clienti.cod_client` |
+| `linii_doc_ro.item_code` | `items_core@CATALOG.item_code` | `mv_items_core.item_code` |
+| `linii_doc_ext.item_code` | `items_core@CATALOG.item_code` | `mv_items_core.item_code` |
+
+Trade-off-ul acceptat: până la refresh-ul MV-ului (max 60 secunde după un INSERT în master), un INSERT în VANZARI care referențiază un cod nou ar putea eșua tranzitoriu. Pentru cazurile critice, se forțează refresh manual înainte de operațiunea dependentă.
+
 ## 8.4. Constrângeri de validare
+
+### 8.4.1. La nivel local
+
+CHECK-uri pe domenii și pe combinații logice de atribute:
+
+| Tabel | Constrângere | Semnificație |
+|---|---|---|
+| `fise_clienti_*` | `tip_doc IN ('F','I')` | Documentul este factură sau încasare |
+| `fise_clienti_*` | `doc_type_xrp IN ('INV','PMT','CRM','PPM','REF','RPM','DRM','VRF')` | Tip XRP în mulțimea de coduri permise |
+| `fise_clienti_*` | `semn IN (-1, 1)` | Direcția contabilă |
+| `fise_clienti_ro` | `moneda = 'RON'` | Predicat de fragmentare |
+| `fise_clienti_ext` | `moneda <> 'RON'` | Predicat de fragmentare |
+| `items_seasons` | `active IN (0, 1)` | Boolean flag |
+| `clienti` | `end_date IS NULL OR end_date > start_date` | Interval temporal valid |
+| `zone_agenti` | `end_date IS NULL OR end_date > start_date` | Interval temporal valid |
+| `zone_intervale_plata` | `end_date IS NULL OR end_date > start_date` | Interval temporal valid |
+
+CHECK-urile pe predicatele de fragmentare (`ck_fise_ro_mon`, `ck_fise_ext_mon`) au un rol dublu: definesc semantica fragmentului și împiedică inserturi „pe fragmentul greșit", indiferent de calea de acces (direct sau prin view-ul de transparență).
+
+### 8.4.2. Pentru relații stocate în baze de date diferite
+
+Validările cross-PDB se implementează prin triggere care fac join-uri remote sau prin agregate calculate post-INSERT. Cazul concret implementat: **coerența între suma documentului și suma liniilor lui**.
+
+Pentru fiecare document din `FISE_CLIENTI_*`, valoarea totală (`amount_doc`) trebuie să fie aproximativ egală cu suma valorilor liniilor (`SUM(xrp_linie_valoare_fara_tva + xrp_linie_tva)` peste `LINII_DOC_*` cu același `(nr_document, doc_type_xrp)`). Toleranța acceptată este 0.01 RON (eroare de rotunjire la împărțirea TVA-ului).
+
+Implementarea este un trigger `AFTER INSERT OR UPDATE OR DELETE ON linii_doc_*` care recalculează agregatul după fiecare modificare și ridică `RAISE_APPLICATION_ERROR` dacă diferența depășește toleranța:
+
+```sql
+CREATE OR REPLACE TRIGGER trg_coerenta_sum_ro
+AFTER INSERT OR UPDATE OR DELETE ON linii_doc_ro
+DECLARE
+  CURSOR c IS
+    SELECT f.nr_document, f.doc_type_xrp,
+           f.amount_doc AS doc_total,
+           SUM(l.xrp_linie_valoare_fara_tva + l.xrp_linie_tva) AS sum_linii
+    FROM fise_clienti_ro f
+         JOIN linii_doc_ro l ON (l.nr_document, l.doc_type_xrp) = (f.nr_document, f.doc_type_xrp)
+    GROUP BY f.nr_document, f.doc_type_xrp, f.amount_doc
+    HAVING ABS(f.amount_doc - SUM(l.xrp_linie_valoare_fara_tva + l.xrp_linie_tva)) > 0.01;
+BEGIN
+  FOR r IN c LOOP
+    RAISE_APPLICATION_ERROR(-20001, 'Incoerenta suma pe ' || r.nr_document || '/' || r.doc_type_xrp);
+  END LOOP;
+END;
+/
+```
+
+Un trigger similar (`trg_coerenta_sum_ext`) acoperă fragmentul EXT.
 
 # 9. Cererea SQL complexă și tehnici de optimizare
 
