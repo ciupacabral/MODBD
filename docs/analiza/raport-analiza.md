@@ -31,13 +31,45 @@ Pentru protecția datelor cu caracter personal, codurile reale de client (numere
 
 # 2. Diagramele bazei de date OLTP inițiale
 
-<!-- Conținut Task 10. Punctaj: 1p (0.5p E-R + 0.5p conceptuală), ambele obligatorii. -->
+Modelul de pornire este OLTP-ul care servește operațiile zilnice ale rețelei de distribuție. Diagramele de mai jos surprind două nivele de detaliu: diagrama entitate–relație, care evidențiază entitățile, asocierile și cardinalitățile, și diagrama conceptuală detaliată, care adaugă atributele și cheile externe.
 
 ## 2.1. Diagrama Entitate–Relație
 
+Modelul conține 12 entități independente și 3 relații many-to-many, depășind pragul minim de 10 entități cerut prin baremul oficial.
+
+![Diagrama Entitate–Relație OLTP](build/01-er-oltp.png){#fig:er width=100%}
+
+Entitățile independente sunt: `CLIENTI`, `ZONE`, `AGENTI`, `INTERVALE_PLATA`, `INTERVALE_PLATA_ZILE`, `CLIENTI_CONTACTE`, `FISE_CLIENTI`, `MS_ITEMS`, `BRANDS`, `ITEMS_CATEGORY`, `ITEMS_TYPE`, `ITEMS_SEASONS`. Relațiile many-to-many sunt:
+
+- `ZONE_AGENTI` — un agent acoperă mai multe zone în timp, iar o zonă este acoperită succesiv de mai mulți agenți. Asocierea poartă atribute temporale (`start_date`, `end_date`) care permit reconstituirea acoperirii la o dată dată.
+- `ZONE_INTERVALE_PLATA` — același pattern temporal pentru atribuirea termenelor de plată per zonă.
+- `LINII_DOC` — leagă `FISE_CLIENTI` (documentele) de `MS_ITEMS` (produsele) printr-o cheie externă compusă (`nr_document`, `doc_type_xrp`) către documentul-părinte.
+
+Tabela `ZONE` are și o auto-referință (`parent_zona_id`), care modelează ierarhia zonelor (de exemplu, o zonă-părinte „RO" cu subzonele ARDEAL, MOLDOVA, SUD).
+
 ## 2.2. Diagrama conceptuală
 
+Diagrama conceptuală include atributele fiecărei entități, identificarea cheilor primare și externe și cardinalitățile precise (notație Crow's foot). Tipurile de date sunt prezentate în varianta logică (bigint, varchar, date, decimal) — maparea la tipurile fizice Oracle (`NUMBER(19)`, `VARCHAR2`, `DATE`, `NUMBER(p,s)`) se face în implementarea backend-ului.
+
+![Schema conceptuală OLTP globală](build/02-conceptual-global.png){#fig:conceptual width=100%}
+
+Cele mai relevante observații, din perspectiva fragmentării ulterioare:
+
+1. `FISE_CLIENTI.moneda` are cardinalitate redusă (4 valori distincte în volumul efectiv: RON, EUR, CZK, USD) și o distribuție concentrată — peste 75% dintre documente sunt în RON. Acest fapt este premisă pentru fragmentarea orizontală primară din capitolul 4.
+2. `MS_ITEMS` conține 15 atribute, dintre care un grup clar identifică produsul (cod, nume, branduri, categorii) și altul descrie aspectele comerciale-fizice (cost, greutate, barcode, furnizor). Această dihotomie va susține algoritmul de fragmentare verticală.
+3. Cheia compusă `(nr_document, doc_type_xrp)` între `FISE_CLIENTI` și `LINII_DOC` este premisa fragmentării orizontale derivate: orice fragmentare a documentelor se propagă natural asupra liniilor lor.
+
 ## 2.3. Justificarea normalizării (Forma Normală 3)
+
+Modelul respectă FN3 prin cele trei condiții cumulative:
+
+**FN1 — atomicitate**. Toate atributele sunt atomice. Nu există coloane multi-valor sau structuri repetitive în interiorul unei celule.
+
+**FN2 — eliminarea dependențelor parțiale**. Toate tabelele au chei primare simple (un singur atribut `id`), cu o singură excepție: `INTERVALE_PLATA_ZILE` are cheie compusă `(id_interval, per_zile)`. În acest caz, atributele non-cheie (`zile_start`, `zile_end`) depind de combinația completă a cheii, nu doar de o componentă — așadar FN2 este satisfăcută.
+
+**FN3 — eliminarea dependențelor tranzitive**. Niciun atribut non-cheie nu depinde de un alt atribut non-cheie. De exemplu, în `CLIENTI`, atributul `denumire_client` depinde direct de cheia primară `id`, nu de un atribut intermediar. O potențială violare ar fi fost păstrarea zonei clientului în tabela `FISE_CLIENTI` (dependență tranzitivă `id` → `cod_client` → `id_zona`); am evitat acest design prin păstrarea în `FISE_CLIENTI` doar a `cod_client`, urmând ca informația despre zonă să fie obținută prin join.
+
+Modelul rezultat este normalizat la FN3 și permite fragmentări corecte (completitudine, reconstrucție, disjuncție — verificate în capitolul 5).
 
 # 3. Modul de distribuire a datelor
 
