@@ -240,7 +240,33 @@ Pentru operațiile DML peste view, triggere `INSTEAD OF` rutează inserările/ac
 
 # 5. Verificarea corectitudinii fragmentărilor
 
-<!-- Conținut Task 13. Punctaj: 1p. -->
+Pentru ca o fragmentare să fie corectă, trebuie să îndeplinească trei condiții cumulative: completitudine, reconstrucție (lossless join) și disjuncție. Verificăm cele trei condiții pentru fiecare dintre cele trei fragmentări aplicate.
+
+| Fragmentare | Completitudine | Reconstrucție | Disjuncție |
+|---|---|---|---|
+| Orizontală primară `FISE_CLIENTI` (pe `moneda`) | $m_1 \vee m_2 \equiv \texttt{moneda is not null}$ — verificată empiric: toate cele 2.048 documente au monedă populată | $\mathit{FISE\_CLIENTI} = \mathit{FISE\_CLIENTI\_RO} \cup \mathit{FISE\_CLIENTI\_EXT}$ (UNION ALL) — 1.555 + 493 = 2.048, identic cu populația originală | $m_1 \wedge m_2 \equiv \texttt{FALSE}$ — un tuplu cu `moneda = 'RON'` nu poate satisface `moneda <> 'RON'` |
+| Orizontală derivată `LINII_DOC` (semijoin) | Cheia externă (`nr_document`, `doc_type_xrp`) este obligatorie (NOT NULL + FK enforcement) — fiecare linie are header, deci aparține unui fragment | $\mathit{LINII\_DOC} = \mathit{LINII\_DOC\_RO} \cup \mathit{LINII\_DOC\_EXT}$ — 3.806 + 1.712 = 5.518 (după eliminarea celor 80 orfani fără `item_code` valid) | Cheia primară `id` a liniei este unică global, iar fiecare linie e legată de un singur header (cardinalitate 1) — deci aparține unui singur fragment derivat |
+| Verticală `MS_ITEMS` (BEA → CORE/EXTRA) | Atributele $A_1$..$A_{14}$ acoperite de reuniune: `ITEMS_CORE` are 7 + `id`, `ITEMS_EXTRA` are 7 + `id` = 14 atribute non-cheie + cheia replicată. Niciun atribut omis | $\mathit{MS\_ITEMS} = \mathit{ITEMS\_CORE} \bowtie_{id} \mathit{ITEMS\_EXTRA}$ — join pe PK garantează reconstrucție lossless (FN3 + PK obligatoriu) | Atributele disjuncte între cele două fragmente, cu excepția cheii primare `id`, care e replicată intenționat pentru join. Disjuncția pe atribute non-cheie este completă |
+
+Verificările au fost confirmate empiric în timpul implementării prin teste de tip:
+
+```sql
+-- Reconstrucție fragmentare orizontală
+SELECT COUNT(*) FROM v_fise_clienti;        -- 2.048 (corect)
+SELECT COUNT(*) FROM fise_clienti_ro;       -- 1.555
+SELECT COUNT(*) FROM fise_clienti_ext;      -- 493
+
+-- Disjuncția fragmentării orizontale
+SELECT COUNT(*) FROM fise_clienti_ro
+WHERE moneda <> 'RON';                       -- 0 (CHECK constraint împiedică)
+
+-- Reconstrucție fragmentare verticală
+SELECT COUNT(*) FROM v_items;                -- 3.192 (corect)
+SELECT COUNT(*) FROM items_core c
+WHERE NOT EXISTS (SELECT 1 FROM items_extra e WHERE e.id = c.id);  -- 0 (FK obligatoriu)
+```
+
+Constrângerile CHECK pe predicatele de fragmentare (`ck_fise_ro_mon: moneda = 'RON'`, `ck_fise_ext_mon: moneda <> 'RON'`) garantează la nivel de bază de date că orice insert sau update respectă disjuncția — un document nu poate „migra accidental" în fragmentul greșit.
 
 # 6. Argumentarea deciziei de replicare
 
