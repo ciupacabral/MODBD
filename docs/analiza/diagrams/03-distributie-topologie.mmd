@@ -1,0 +1,18 @@
+---
+title: Topologia retelei BD distribuite
+---
+flowchart TB
+  subgraph CDB["CDB XE (Oracle 21c) — container oracle-modbd"]
+    direction LR
+    DISTR[("PDB DISTRIBUTIE<br/>SGBD_DISTRIBUTIE<br/>8 tabele master<br/>52 randuri")]
+    CAT[("PDB CATALOG<br/>SGBD_CATALOG<br/>6 tabele + V_ITEMS<br/>6.550 randuri")]
+    VAN[("PDB VANZARI<br/>SGBD_VANZARI<br/>4 fragmente + 7 MV<br/>7.566 randuri")]
+  end
+  VAN -.->|"lnk_distributie"| DISTR
+  VAN -.->|"lnk_catalog"| CAT
+  DISTR -.->|"MV refresh @ 60s"| VAN
+  CAT -.->|"MV refresh @ 60s"| VAN
+  style CDB fill:#f9f9f9,stroke:#666,stroke-width:2px
+  style DISTR fill:#e1f5ff,stroke:#0288d1
+  style CAT fill:#fff4e1,stroke:#f57c00
+  style VAN fill:#e8f5e9,stroke:#388e3c
