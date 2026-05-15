@@ -4,36 +4,69 @@
 -- Se ruleaza ca SYS in CDB$ROOT.
 -- =============================================================================
 
+
 ALTER SESSION SET CONTAINER = CDB$ROOT;
 
--- Eliminam PDB-ul default XEPDB1 ca sa eliberam slot (XE accepta max 3 user PDBs).
-ALTER PLUGGABLE DATABASE XEPDB1 CLOSE IMMEDIATE;
-DROP PLUGGABLE DATABASE XEPDB1 INCLUDING DATAFILES;
 
--- 1. DISTRIBUTIE -- CRM/Comercial: clienti, zone, agenti, intervale_plata
+-- ============================================================================
+-- Eliminam PDB-ul default XEPDB1 ca sa eliberam slot.
+-- Oracle XE 21c accepta maxim 3 user PDBs in plus de PDB$SEED.
+-- ============================================================================
+ALTER PLUGGABLE DATABASE XEPDB1 CLOSE IMMEDIATE;
+DROP  PLUGGABLE DATABASE XEPDB1 INCLUDING DATAFILES;
+
+
+-- ============================================================================
+-- PDB #1: DISTRIBUTIE
+-- Domeniu CRM/comercial: clienti, zone, agenti, intervale de plata, M:N-uri.
+-- ============================================================================
 CREATE PLUGGABLE DATABASE distributie
-  ADMIN USER pdb_admin IDENTIFIED BY "ModbdSecret123"
-  FILE_NAME_CONVERT = ('/opt/oracle/oradata/XE/pdbseed/',
-                       '/opt/oracle/oradata/XE/distributie/');
+    ADMIN USER pdb_admin IDENTIFIED BY "ModbdSecret123"
+    FILE_NAME_CONVERT = (
+        '/opt/oracle/oradata/XE/pdbseed/'
+      , '/opt/oracle/oradata/XE/distributie/'
+    );
+
 ALTER PLUGGABLE DATABASE distributie OPEN;
 
--- 2. CATALOG -- Produse: branduri, sezoane, tipuri, categorii, items
+
+-- ============================================================================
+-- PDB #2: CATALOG
+-- Domeniu produse: branduri, sezoane, tipuri, categorii, items (CORE + EXTRA).
+-- ============================================================================
 CREATE PLUGGABLE DATABASE catalog
-  ADMIN USER pdb_admin IDENTIFIED BY "ModbdSecret123"
-  FILE_NAME_CONVERT = ('/opt/oracle/oradata/XE/pdbseed/',
-                       '/opt/oracle/oradata/XE/catalog/');
+    ADMIN USER pdb_admin IDENTIFIED BY "ModbdSecret123"
+    FILE_NAME_CONVERT = (
+        '/opt/oracle/oradata/XE/pdbseed/'
+      , '/opt/oracle/oradata/XE/catalog/'
+    );
+
 ALTER PLUGGABLE DATABASE catalog OPEN;
 
--- 3. VANZARI -- Tranzactii: documente (header + linii)
+
+-- ============================================================================
+-- PDB #3: VANZARI
+-- Domeniu tranzactii: fise documente (header) + linii (M:N).
+-- ============================================================================
 CREATE PLUGGABLE DATABASE vanzari
-  ADMIN USER pdb_admin IDENTIFIED BY "ModbdSecret123"
-  FILE_NAME_CONVERT = ('/opt/oracle/oradata/XE/pdbseed/',
-                       '/opt/oracle/oradata/XE/vanzari/');
+    ADMIN USER pdb_admin IDENTIFIED BY "ModbdSecret123"
+    FILE_NAME_CONVERT = (
+        '/opt/oracle/oradata/XE/pdbseed/'
+      , '/opt/oracle/oradata/XE/vanzari/'
+    );
+
 ALTER PLUGGABLE DATABASE vanzari OPEN;
 
--- Salvam starea (READ WRITE) ca sa porneasca automat la restart.
-ALTER PLUGGABLE DATABASE distributie SAVE STATE;
-ALTER PLUGGABLE DATABASE catalog SAVE STATE;
-ALTER PLUGGABLE DATABASE vanzari SAVE STATE;
 
-SELECT con_id, name, open_mode FROM v$pdbs ORDER BY con_id;
+-- ============================================================================
+-- SAVE STATE: PDB-urile se deschid automat (READ WRITE) la restart-ul CDB.
+-- ============================================================================
+ALTER PLUGGABLE DATABASE distributie SAVE STATE;
+ALTER PLUGGABLE DATABASE catalog     SAVE STATE;
+ALTER PLUGGABLE DATABASE vanzari     SAVE STATE;
+
+
+-- Verificare finala
+SELECT con_id, name, open_mode
+FROM   v$pdbs
+ORDER BY con_id;
