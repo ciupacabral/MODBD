@@ -475,7 +475,52 @@ Un trigger similar (`trg_coerenta_sum_ext`) acoperă fragmentul EXT.
 
 # 9. Cererea SQL complexă și tehnici de optimizare
 
-<!-- Conținut Task 17. Punctaj: 0.25p. -->
+Pentru a demonstra valoarea modelului distribuit, am formulat o cerere SQL complexă care implică toate cele 3 PDB-uri și care va fi optimizată în modulul de implementare backend.
+
+**Enunț în limbaj natural**:
+*Care sunt cei 10 agenți cu cea mai mare valoare totală vândută în anul 2024, defalcată pe zonă comercială și categorie de produs, luând în calcul doar facturile efective (`tip_doc = 'F'`)?*
+
+Cererea folosește simultan: agenții și asocierea zone–agenți (din `DISTRIBUTIE`, accesate prin DB link), documentele și liniile lor (din `VANZARI`, prin view-urile de transparență), zonele și categoriile de produs (replicate ca MV-uri în `VANZARI`). Implică un join de 8 relații și două agregări (suma valorilor pe combinație agent–zonă–categorie, urmată de un Top-N).
+
+**Formularea SQL**:
+
+```sql
+SELECT a.nume_agent, z.den_zona, c.name AS categorie,
+       SUM(ld.xrp_linie_valoare_fara_tva) AS total_2024
+FROM   v_fise_clienti f
+       JOIN v_linii_doc ld
+            ON ld.nr_document = f.nr_document
+           AND ld.doc_type_xrp = f.doc_type_xrp
+       JOIN mv_clienti cli           ON cli.cod_client = f.cod_client
+       JOIN mv_zone z                ON z.id = cli.id_zona
+       JOIN zone_agenti@lnk_distributie za
+            ON za.id_zona = cli.id_zona
+           AND f.data_doc_efectiva BETWEEN za.start_date
+                                       AND NVL(za.end_date, DATE '9999-12-31')
+       JOIN agenti@lnk_distributie a ON a.id = za.id_agent
+       JOIN mv_items_core ic         ON ic.item_code = ld.item_code
+       JOIN mv_items_category c      ON c.id = ic.category_id
+WHERE  f.tip_doc = 'F'
+  AND  f.data_doc_efectiva >= DATE '2024-01-01'
+  AND  f.data_doc_efectiva <  DATE '2025-01-01'
+GROUP BY a.nume_agent, z.den_zona, c.name
+ORDER BY total_2024 DESC
+FETCH FIRST 10 ROWS ONLY;
+```
+
+**Tehnici de optimizare candidate**:
+
+| Tehnică | Avantaje | Dezavantaje |
+|---|---|---|
+| **Optimizator bazat pe regulă (RBO)** | Predictibil, nu necesită statistici. Aplicabil când statisticile lipsesc sau sunt depășite. | Ignoră selectivitățile reale; alege deseori ordine de join suboptimală în query-uri distribuite. |
+| **Optimizator bazat pe cost (CBO)** | Folosește statistici (cardinalități, distribuții) pentru a alege ordinea de join și algoritmii (nested loops vs. hash) optim. | Necesită `DBMS_STATS` proaspăt. Pe MV-uri replicate, estimările pot fi imprecise dacă statisticile nu sunt regenerate după refresh. |
+| **Partition pruning pe predicate de fragmentare** | Reduce I/O drastic — predicate care coincid cu predicatul de fragmentare scanează doar fragmentul relevant (de exemplu, `moneda = 'RON'` → doar `FISE_CLIENTI_RO`). | Se aplică automat doar dacă predicatul este detectabil de optimizer; necesită view-uri scrise cu UNION ALL, nu UNION distinct. |
+| **Indexare selectivă** | Indecși pe coloanele cele mai filtrate (`data_doc_efectiva`, `cod_client`, `tip_doc`) accelerează scan-urile range și join-urile. | Cost de menținere la INSERT/UPDATE; trebuie balansat cu workload-ul real. |
+| **Hint `DRIVING_SITE`** | Forțează asamblarea rezultatului într-un nod specific, util când optimizer-ul nu alege site-ul cu cel mai mic volum de date transferat. | Decizie manuală; riscă să devină greșit la schimbarea volumelor. |
+| **Materialized View cu query rewrite** | Pre-calculează agregările frecvente (de exemplu, total per agent–zonă–lună); optimizer-ul poate rescrie query-ul să citească din MV. | Necesită refresh periodic; potențial date stale. |
+| **Semijoin pentru relații remote mici** | Reduce volumul transferat pe rețea — în loc să transferăm întreaga relație remote, transferăm doar cheile filtrului. | Adaugă o etapă suplimentară de comunicare; benefică doar când relația remote este mare și filtrul reduce semnificativ volumul. |
+
+Compararea concretă a planurilor de execuție (RBO vs. CBO vs. DRIVING_SITE), cu costuri și timpii observați, este detaliată în raportul modulului de implementare backend.
 
 # Bibliografie și notă de transparență
 
