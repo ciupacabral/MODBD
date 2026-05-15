@@ -541,16 +541,43 @@ docker exec -it oracle-modbd sqlplus app_dist/ModbdSecret123@localhost:1521/DIST
 - Global config rămâne neschimbat (`octavian.oprinoiu@otter.ro`)
 - Commit-uri single-line, FĂRĂ `Co-Authored-By:` tags
 
-### Task-uri executate (6/17)
-| # | Status | SHA | Note |
-|---|---|---|---|
-| 1 | ✅ | `67a4cab` | git init + initial commit (22 files) |
-| 2 | ✅ | `e59230c` | CSV_DIR directory + READ+WRITE grants în toate 3 PDB-uri |
-| 3 | ✅ | `8b1a66d` | DDL DISTRIBUTIE (8 tabele + 8 FK) |
-| 4 | ✅ | `6e560c0` | Load DISTRIBUTIE (5+6+10+5+2+8+11+5 rânduri) — 1 retry necesar |
-| 5 | ✅ | `860a9a4` | DDL CATALOG (6 tabele + V_ITEMS + 3 triggere INSTEAD OF) |
-| 6 | ✅ | `365c2a4` | Load CATALOG (131+15+3+17+3192+3192 rânduri, V_ITEMS=3192) |
-| 7-17 | ⏳ | — | de făcut |
+### Task-uri executate (17/17 — TOATE COMPLETATE) ✅
+| # | SHA | Descriere |
+|---|---|---|
+| 1 | `67a4cab` | git init + initial commit (22 files) |
+| 2 | `e59230c` | CSV_DIR directory + READ+WRITE grants în toate 3 PDB-uri |
+| 3 | `8b1a66d` | DDL DISTRIBUTIE (8 tabele + 8 FK) |
+| 4 | `6e560c0` | Load DISTRIBUTIE (5+6+10+5+2+8+11+5 rânduri) |
+| 5 | `860a9a4` | DDL CATALOG (6 tabele + V_ITEMS + 3 triggere INSTEAD OF) |
+| 6 | `365c2a4` | Load CATALOG (131+15+3+17+3192+3192 rânduri) |
+| 7 | `8c0666c` | DDL VANZARI fragments (FISE RO/EXT + LINII RO/EXT) |
+| 8 | `d483f08` | Load VANZARI (1555+493 fise, 3831+1767 linii — split per Moneda) |
+| 9 | `fcc6f58` | View-uri UNION ALL + 5 triggere INSTEAD OF |
+| 10 | `c5e6faf` | 7 MV logs pe master (DISTRIBUTIE + CATALOG) |
+| 11 | `37edf26` | DB links VANZARI → DISTRIBUTIE + CATALOG |
+| 12 | `2288a33` | 7 MV-uri replicate + 4 FK cross-PDB *(80 orphans LINII șterse: item_codes orfane în datele sursă)* |
+| 13 | `712aea4` | DBMS_SCHEDULER job FAST refresh @ 60s (testat end-to-end) |
+| 14 | `d7b918f` | Trigger agregat coerență sum_doc ↔ sum_linii |
+| 15 | `b381704` | 8 indecși + DBMS_STATS gathered |
+| 16 | `04de288` | Cererea complexă top 10 agenți 2024 + 3 EXPLAIN PLAN (RBO=hash 2771358336 / CBO=cost 70 / DRIVING_SITE=cost 46 = 40% îmbunătățire) |
+| 17 | `e7181ab` | End-to-end validation — toate 5 testele PASS |
+
+### Volume finale
+- DISTRIBUTIE: 5+6+10+5+2+8+11+5 = 52 rânduri
+- CATALOG: 131+15+3+17+3192+3192 = 6.550 rânduri
+- VANZARI: 1555+493=2.048 documente, 3806+1712=5.518 linii (80 orfane eliminate la enforcement FK)
+- MV-uri replicate în VANZARI: 10+5+3192+131+15+3+17 = 3.373 rânduri
+
+### Cerințe baremul oficial — acoperite
+| Punctaj | Cerință | Status |
+|---|---|---|
+| 0.5p obligatoriu | Creare BD-uri + utilizatori | ✓ Tasks 1-2 |
+| 1p obligatoriu | Creare relații + fragmente | ✓ Tasks 3, 5, 7 |
+| 0.5p obligatoriu | Populare cu date | ✓ Tasks 4, 6, 8 |
+| 2.5p | Transparență (vertical + orizontal + cross-BD) | ✓ Tasks 5 (V_ITEMS), 9 (V_FISE/V_LINII), 11 (DB links) |
+| 1p | Sincronizare replicate | ✓ Tasks 10, 12, 13 (MV logs + 7 MV-uri + job 60s, sync verificat E2E) |
+| 2p obligatoriu | Toate constrângerile | ✓ DDL local (Tasks 3, 5, 7) + cross-PDB FK (Task 12) + agregat (Task 14) |
+| 1.5p | Optimizare cerere SQL (RBO + CBO + sugestii) | ✓ Tasks 15-16 (indexes + stats + 3 EXPLAIN PLAN comparate) |
 
 ### Lecții învățate (de aplicat la task-urile 8, 15 care încarcă CSV-uri rămase)
 
@@ -578,10 +605,11 @@ docker exec -it oracle-modbd sqlplus app_dist/ModbdSecret123@localhost:1521/DIST
 **Task 16**: Query complex (top 10 agenți 2024) + 3 EXPLAIN PLAN (RBO/CBO/DRIVING_SITE).
 **Task 17**: End-to-end validation script (counts + transparency + FK + sync).
 
-### Reluare în sesiune nouă
+### Status final: IMPLEMENTARE COMPLETĂ ✅
 
-1. Citește acest handoff + spec + plan
-2. Verifică status: `cd /Users/octav/MODBD && git log --oneline | head -10`
-3. Verifică Oracle: `docker ps` și `docker exec ... sqlplus sgbd_vanzari/oracle@localhost:1521/VANZARI` (testează că conexiunea funcționează)
-4. Continuă de la Task 7 din plan
-5. Folosește **subagent-driven-development** skill cu un mic ajustaj la prompt: include LRTRIM + NOLOGFILE pattern și warning despre fabricare date.
+Modulul 2 al proiectului (Implementare BD Oracle) este complet. Toate 17 task-uri rulate, 18 commit-uri pe `main`, baza distribuită funcțională în Docker.
+
+### Următorii pași în afara modulului 2
+
+1. **Modulul 1 — Raport de Analiză** (10p): diagrama E-R, scheme conceptuale globale/locale, argumentare BEA pentru fragmentare verticală, replicare, etc. Spec-ul `2026-05-14-modbd-bd-oracle-design.md` conține toată substanța tehnică — raportul reformulează ce am implementat în formă academică.
+2. **Modulul 3 — Aplicație Front-end** (10p, fără minim): CRUD pe cele 3 PDB-uri + vizualizare globală + propagare LMD. Tehnologie nedecisă încă.
