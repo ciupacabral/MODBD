@@ -14,3 +14,9 @@
 # Outputs de implementare temporare
 /tmp/
 scratch/
+
+# Raport analiza — artefacte build
+docs/analiza/build/*
+!docs/analiza/build/.gitkeep
+docs/analiza/output/*
+!docs/analiza/output/.gitkeep
