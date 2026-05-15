@@ -1,0 +1,73 @@
+---
+title: Schema conceptuala locala - PDB CATALOG (cu fragmentare verticala ITEMS)
+---
+erDiagram
+  BRANDS {
+    bigint id PK
+    varchar code UK
+    varchar brand
+    varchar description
+  }
+  ITEMS_CATEGORY {
+    bigint id PK
+    varchar code UK
+    varchar category
+    varchar name
+  }
+  ITEMS_TYPE {
+    bigint id PK
+    varchar code UK
+    varchar item_type
+    varchar description
+  }
+  ITEMS_SEASONS {
+    bigint id PK
+    varchar code UK
+    varchar description
+    varchar season_year
+    int active
+  }
+  ITEMS_CORE {
+    bigint id PK
+    varchar item_code UK
+    varchar item_name
+    bigint brand_id FK
+    bigint season_id FK
+    bigint item_type_id FK
+    bigint category_id FK
+    int active
+  }
+  ITEMS_EXTRA {
+    bigint id PK
+    varchar item_description
+    float vat
+    decimal last_cost_price
+    varchar main_barcode
+    varchar supplier_code
+    decimal weight
+    varchar um
+  }
+  V_ITEMS {
+    bigint id
+    varchar item_code
+    varchar item_name
+    varchar item_description
+    bigint brand_id
+    bigint season_id
+    bigint item_type_id
+    bigint category_id
+    float vat
+    decimal last_cost_price
+    varchar main_barcode
+    varchar supplier_code
+    decimal weight
+    varchar um
+    int active
+  }
+  BRANDS ||--o{ ITEMS_CORE : "brand_id"
+  ITEMS_CATEGORY ||--o{ ITEMS_CORE : "category_id"
+  ITEMS_TYPE ||--o{ ITEMS_CORE : "item_type_id"
+  ITEMS_SEASONS ||--o{ ITEMS_CORE : "season_id"
+  ITEMS_CORE ||--|| ITEMS_EXTRA : "id (CASCADE)"
+  ITEMS_CORE ||..|| V_ITEMS : "join transparency"
+  ITEMS_EXTRA ||..|| V_ITEMS : "join transparency"

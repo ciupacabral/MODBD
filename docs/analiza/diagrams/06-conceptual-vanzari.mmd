@@ -1,0 +1,92 @@
+---
+title: Schema conceptuala locala - PDB VANZARI (fragmente orizontale + MV-uri replicate)
+---
+erDiagram
+  FISE_CLIENTI_RO {
+    bigint id PK
+    varchar nr_document
+    char doc_type_xrp
+    date data_doc_efectiva
+    varchar moneda "CHECK = RON"
+    decimal amount_doc
+    varchar cod_client FK
+  }
+  FISE_CLIENTI_EXT {
+    bigint id PK
+    varchar nr_document
+    char doc_type_xrp
+    date data_doc_efectiva
+    varchar moneda "CHECK <> RON"
+    decimal amount_doc
+    varchar cod_client FK
+  }
+  LINII_DOC_RO {
+    bigint id PK
+    char doc_type_xrp FK
+    varchar nr_document FK
+    varchar item_code FK
+    decimal item_qty
+    decimal xrp_linie_valoare_fara_tva
+    decimal xrp_linie_tva
+  }
+  LINII_DOC_EXT {
+    bigint id PK
+    char doc_type_xrp FK
+    varchar nr_document FK
+    varchar item_code FK
+    decimal item_qty
+    decimal xrp_linie_valoare_fara_tva
+    decimal xrp_linie_tva
+  }
+  V_FISE_CLIENTI {
+    bigint id
+    varchar moneda
+    decimal amount_doc
+  }
+  V_LINII_DOC {
+    bigint id
+    varchar item_code
+  }
+  MV_CLIENTI {
+    varchar cod_client PK
+    varchar denumire_client
+    bigint id_zona
+  }
+  MV_ZONE {
+    bigint id PK
+    varchar cod_zona
+    varchar den_zona
+  }
+  MV_ITEMS_CORE {
+    bigint id PK
+    varchar item_code UK
+    varchar item_name
+  }
+  MV_BRANDS {
+    bigint id PK
+    varchar code UK
+    varchar brand
+  }
+  MV_ITEMS_CATEGORY {
+    bigint id PK
+    varchar code UK
+    varchar category
+  }
+  MV_ITEMS_TYPE {
+    bigint id PK
+    varchar code UK
+  }
+  MV_ITEMS_SEASONS {
+    bigint id PK
+    varchar code UK
+  }
+  FISE_CLIENTI_RO ||--o{ LINII_DOC_RO : "(nr_document, doc_type_xrp)"
+  FISE_CLIENTI_EXT ||--o{ LINII_DOC_EXT : "(nr_document, doc_type_xrp)"
+  FISE_CLIENTI_RO ||..|| V_FISE_CLIENTI : "UNION ALL"
+  FISE_CLIENTI_EXT ||..|| V_FISE_CLIENTI : "UNION ALL"
+  LINII_DOC_RO ||..|| V_LINII_DOC : "UNION ALL"
+  LINII_DOC_EXT ||..|| V_LINII_DOC : "UNION ALL"
+  MV_CLIENTI ||--o{ FISE_CLIENTI_RO : "fk_fise_ro_client"
+  MV_CLIENTI ||--o{ FISE_CLIENTI_EXT : "fk_fise_ext_client"
+  MV_ITEMS_CORE ||--o{ LINII_DOC_RO : "fk_lin_ro_item"
+  MV_ITEMS_CORE ||--o{ LINII_DOC_EXT : "fk_lin_ext_item"

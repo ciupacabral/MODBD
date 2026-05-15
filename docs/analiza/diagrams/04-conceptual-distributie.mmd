@@ -1,0 +1,63 @@
+---
+title: Schema conceptuala locala - PDB DISTRIBUTIE
+---
+erDiagram
+  ZONE {
+    bigint id PK
+    varchar cod_zona UK
+    varchar den_zona
+    varchar tip_zona
+    bigint parent_zona_id FK
+  }
+  AGENTI {
+    bigint id PK
+    varchar cod_agent UK
+    varchar nume_agent
+    varchar email
+  }
+  CLIENTI {
+    bigint id PK
+    varchar cod_client UK
+    varchar denumire_client
+    varchar tip_client
+    bigint id_zona FK
+    date start_date
+    date end_date
+  }
+  CLIENTI_CONTACTE {
+    varchar cod_client PK
+    varchar email_client
+    varchar email_agent
+  }
+  INTERVALE_PLATA {
+    bigint id PK
+    varchar den_interval UK
+  }
+  INTERVALE_PLATA_ZILE {
+    bigint id_interval PK
+    varchar per_zile PK
+    int zile_start
+    int zile_end
+  }
+  ZONE_AGENTI {
+    bigint id PK
+    bigint id_zona FK
+    bigint id_agent FK
+    date start_date
+    date end_date
+  }
+  ZONE_INTERVALE_PLATA {
+    bigint id PK
+    bigint id_zona FK
+    bigint id_interval FK
+    date start_date
+    date end_date
+  }
+  ZONE ||--o{ CLIENTI : ""
+  ZONE ||--o{ ZONE : "parent"
+  ZONE ||--o{ ZONE_AGENTI : ""
+  AGENTI ||--o{ ZONE_AGENTI : ""
+  ZONE ||--o{ ZONE_INTERVALE_PLATA : ""
+  INTERVALE_PLATA ||--o{ ZONE_INTERVALE_PLATA : ""
+  INTERVALE_PLATA ||--o{ INTERVALE_PLATA_ZILE : ""
+  CLIENTI ||--o| CLIENTI_CONTACTE : ""
