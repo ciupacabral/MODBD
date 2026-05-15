@@ -37,6 +37,21 @@ COMMIT;
 
 
 -- ============================================================================
+-- FK-uri locale catre MV_CLIENTI (replicat in VANZARI, dar logic din DISTRIBUTIE)
+-- ============================================================================
+ALTER TABLE fise_clienti_ro
+ADD CONSTRAINT fk_fise_ro_client
+FOREIGN KEY (cod_client)
+REFERENCES  mv_clienti (cod_client);
+
+
+ALTER TABLE fise_clienti_ext
+ADD CONSTRAINT fk_fise_ext_client
+FOREIGN KEY (cod_client)
+REFERENCES  mv_clienti (cod_client);
+
+
+-- ============================================================================
 -- FK-uri locale catre MV_ITEMS_CORE (replicat in VANZARI, dar logic din CATALOG)
 -- ============================================================================
 ALTER TABLE linii_doc_ro

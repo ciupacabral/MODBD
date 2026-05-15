@@ -28,8 +28,8 @@ DECLARE
           , SUM(l.xrp_linie_valoare_fara_tva + l.xrp_linie_tva)       AS sum_linii
         FROM   fise_clienti_ro  f
                JOIN linii_doc_ro  l
-                    ON (l.nr_document, l.doc_type_xrp)
-                     = (f.nr_document, f.doc_type_xrp)
+                    ON  l.nr_document  = f.nr_document
+                    AND l.doc_type_xrp = f.doc_type_xrp
         GROUP BY
             f.nr_document
           , f.doc_type_xrp
@@ -65,8 +65,8 @@ DECLARE
           , SUM(l.xrp_linie_valoare_fara_tva + l.xrp_linie_tva)       AS sum_linii
         FROM   fise_clienti_ext  f
                JOIN linii_doc_ext  l
-                    ON (l.nr_document, l.doc_type_xrp)
-                     = (f.nr_document, f.doc_type_xrp)
+                    ON  l.nr_document  = f.nr_document
+                    AND l.doc_type_xrp = f.doc_type_xrp
         GROUP BY
             f.nr_document
           , f.doc_type_xrp

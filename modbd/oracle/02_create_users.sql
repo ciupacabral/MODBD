@@ -87,6 +87,7 @@ GRANT select any dictionary       TO sgbd_role;
 GRANT create database link        TO sgbd_role;
 GRANT create public database link TO sgbd_role;
 GRANT create public synonym       TO sgbd_role;
+GRANT create job                  TO sgbd_role;
 
 
 -- (4) User aplicativ
@@ -172,6 +173,7 @@ GRANT select any dictionary       TO sgbd_role;
 GRANT create database link        TO sgbd_role;
 GRANT create public database link TO sgbd_role;
 GRANT create public synonym       TO sgbd_role;
+GRANT create job                  TO sgbd_role;
 
 
 CREATE USER sgbd_catalog IDENTIFIED BY oracle
@@ -256,6 +258,7 @@ GRANT select any dictionary       TO sgbd_role;
 GRANT create database link        TO sgbd_role;
 GRANT create public database link TO sgbd_role;
 GRANT create public synonym       TO sgbd_role;
+GRANT create job                  TO sgbd_role;
 
 
 CREATE USER sgbd_vanzari IDENTIFIED BY oracle
