@@ -1,0 +1,17 @@
+---
+title: Diagrama Entitate-Relatie OLTP
+---
+erDiagram
+  ZONE ||--o{ CLIENTI : "deserveste"
+  ZONE ||--o{ ZONE : "parent"
+  ZONE }o--o{ AGENTI : "ZONE_AGENTI"
+  ZONE }o--o{ INTERVALE_PLATA : "ZONE_INTERVALE_PLATA"
+  INTERVALE_PLATA ||--o{ INTERVALE_PLATA_ZILE : "detaliaza"
+  CLIENTI ||--o| CLIENTI_CONTACTE : "are"
+  CLIENTI ||--o{ FISE_CLIENTI : "emite"
+  FISE_CLIENTI ||--o{ LINII_DOC : "contine"
+  MS_ITEMS ||--o{ LINII_DOC : "apare"
+  BRANDS ||--o{ MS_ITEMS : "produce"
+  ITEMS_CATEGORY ||--o{ MS_ITEMS : "clasifica"
+  ITEMS_TYPE ||--o{ MS_ITEMS : "categoriseaza"
+  ITEMS_SEASONS ||--o{ MS_ITEMS : "sezon"
