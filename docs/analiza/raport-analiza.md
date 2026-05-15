@@ -73,7 +73,19 @@ Modelul rezultat este normalizat la FN3 și permite fragmentări corecte (comple
 
 # 3. Modul de distribuire a datelor
 
-<!-- Conținut Task 11. Punctaj: 0.25p obligatoriu. -->
+Arhitectura distribuită folosește trei servere logice de baze de date, implementate ca trei Pluggable Databases (PDB-uri) într-un singur Container Database (CDB) Oracle 21c Express Edition. Alegerea acestei configurări (în loc de trei instanțe Oracle separate) este motivată de două argumente: (1) Oracle 21c XE suportă maxim trei PDB-uri în varianta gratuită, ceea ce se aliniază natural cu necesitatea proiectului, și (2) izolarea logică între PDB-uri este completă (utilizatori, tablespaces, database links, materialized views) — fiecare PDB se comportă ca o bază de date independentă, fără a duplica costul de instanță Oracle.
+
+Cele trei noduri sunt:
+
+- `DISTRIBUTIE` — schema utilizator `SGBD_DISTRIBUTIE`, găzduiește 8 tabele master cu volume mici (52 de rânduri în total): clienții, agenții, zonele, contactele, termenele de plată și cele două relații M:N (`ZONE_AGENTI`, `ZONE_INTERVALE_PLATA`).
+- `CATALOG` — schema `SGBD_CATALOG`, găzduiește catalogul de produse fragmentat vertical (`ITEMS_CORE` + `ITEMS_EXTRA`) plus cele 4 tabele lookup (`BRANDS`, `ITEMS_CATEGORY`, `ITEMS_TYPE`, `ITEMS_SEASONS`). Volum total: 6.550 de rânduri.
+- `VANZARI` — schema `SGBD_VANZARI`, găzduiește fact tables-urile fragmentate orizontal (`FISE_CLIENTI_RO`, `FISE_CLIENTI_EXT`, `LINII_DOC_RO`, `LINII_DOC_EXT`) plus 7 materialized views replicate pentru join-uri locale. Volum în fragmente: 7.566 de rânduri.
+
+![Topologia rețelei distribuite](build/03-distributie-topologie.png){#fig:topologie width=85%}
+
+Topologia este în stea, cu `VANZARI` în rol de consumator: nodul de tranzacții inițiază două database links (`lnk_distributie` și `lnk_catalog`) către celelalte două PDB-uri pentru a accesa datele master. Replicarea datelor master în `VANZARI` se face prin materialized views cu refresh FAST în mod ON DEMAND, declanșate periodic (interval 60 secunde) printr-un job DBMS_SCHEDULER. Această decizie ocolește o limitare a Oracle: opțiunea `REFRESH ON COMMIT` nu este disponibilă cross-PDB.
+
+Aplicația-client se conectează la `VANZARI` și operează asupra view-urilor de transparență (`V_FISE_CLIENTI`, `V_LINII_DOC`, `V_ITEMS` care e local în `CATALOG` dar replicat) și a MV-urilor. Pentru operațiile de scriere, triggere `INSTEAD OF` rutează insert-urile către fragmentul corect pe baza valorii predicatului de fragmentare (de exemplu, `moneda = 'RON'` → `FISE_CLIENTI_RO`).
 
 # 4. Argumentarea deciziei de fragmentare
 
