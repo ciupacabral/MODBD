@@ -297,13 +297,40 @@ Replicarea se implementează prin materialized views cu refresh FAST în mod ON 
 
 # 7. Schemele conceptuale locale
 
-<!-- Conținut Task 15. Punctaj: 0.75p obligatoriu. -->
+După fragmentare și distribuție, schema conceptuală globală se descompune în trei scheme locale, una per PDB. Schemele locale prezintă tabelele fizice (master + fragmente + materialized views), cheile primare și externe, plus view-urile de transparență.
 
 ## 7.1. Schema PDB DISTRIBUTIE
 
+Nodul `DISTRIBUTIE` păstrează 8 tabele master fără fragmentare — toate au volum mic și sunt accesate fie local pentru CRM, fie remote prin DB link pentru join-uri în cererea complexă.
+
+![Schema conceptuală locală — PDB DISTRIBUTIE](build/04-conceptual-distributie.png){#fig:schema-distributie width=100%}
+
+Cheile primare sunt simple (un singur `id` per tabelă), cu excepția `INTERVALE_PLATA_ZILE` care are cheie compusă `(id_interval, per_zile)`. Cheile externe locale (intra-PDB) sunt 8: `clienti → zone`, `clienti_contacte → clienti`, `zone_agenti → zone`, `zone_agenti → agenti`, `zone_intervale_plata → zone`, `zone_intervale_plata → intervale_plata`, `intervale_plata_zile → intervale_plata`, plus auto-referință `zone → zone` (parent).
+
 ## 7.2. Schema PDB CATALOG
 
+Nodul `CATALOG` găzduiește catalogul de produse, cu fragmentarea verticală aplicată pe `MS_ITEMS`. Cele două fragmente fizice (`ITEMS_CORE` și `ITEMS_EXTRA`) sunt expuse unitar prin view-ul `V_ITEMS`, care realizează transparența verticală — aplicația-client vede o singură tabelă logică.
+
+![Schema conceptuală locală — PDB CATALOG](build/05-conceptual-catalog.png){#fig:schema-catalog width=100%}
+
+`ITEMS_EXTRA` are PK = FK către `ITEMS_CORE` (relație 1:1, cu ON DELETE CASCADE), ceea ce garantează că orice produs din CORE are exact o intrare în EXTRA. Cheile externe locale sunt 4 (de la `ITEMS_CORE` către cele patru lookup-uri) plus FK-ul 1:1 între cele două fragmente.
+
+Triggere INSTEAD OF pe `V_ITEMS` rutează inserările, actualizările și ștergerile către ambele fragmente — aplicația nu trebuie să cunoască existența split-ului vertical.
+
 ## 7.3. Schema PDB VANZARI
+
+Nodul `VANZARI` este cel mai complex din punct de vedere structural: găzduiește 4 fragmente fizice orizontale (cele 2 fragmente de fișe × cele 2 fragmente de linii), 2 view-uri de transparență (`V_FISE_CLIENTI`, `V_LINII_DOC`) și 7 materialized views replicate din celelalte două noduri.
+
+![Schema conceptuală locală — PDB VANZARI](build/06-conceptual-vanzari.png){#fig:schema-vanzari width=100%}
+
+Cheile externe locale intra-PDB sunt 2: `LINII_DOC_RO → FISE_CLIENTI_RO` și `LINII_DOC_EXT → FISE_CLIENTI_EXT` (pe cheia compusă `(nr_document, doc_type_xrp)`). Cheile externe către tabelele replicate (cross-PDB la nivel logic, dar locale la nivel de Oracle deoarece referențiază MV-uri replicate) sunt 4:
+
+- `FISE_CLIENTI_RO.cod_client → MV_CLIENTI.cod_client`
+- `FISE_CLIENTI_EXT.cod_client → MV_CLIENTI.cod_client`
+- `LINII_DOC_RO.item_code → MV_ITEMS_CORE.item_code`
+- `LINII_DOC_EXT.item_code → MV_ITEMS_CORE.item_code`
+
+Triggere INSTEAD OF pe `V_FISE_CLIENTI` și `V_LINII_DOC` rutează DML-ul către fragmentele corecte pe baza predicatului de fragmentare (`moneda` pentru fișe). Aplicația-client lucrează exclusiv cu view-urile — fragmentarea orizontală este complet ascunsă.
 
 # 8. Constrângeri de integritate
 
