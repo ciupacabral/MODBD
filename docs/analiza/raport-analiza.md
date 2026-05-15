@@ -270,7 +270,30 @@ Constrângerile CHECK pe predicatele de fragmentare (`ck_fise_ro_mon: moneda = '
 
 # 6. Argumentarea deciziei de replicare
 
-<!-- Conținut Task 14. Punctaj: 0.5p. -->
+Decizia de a replica o relație sau de a o stoca pe o singură stație urmează trei criterii principale:
+
+1. **Volumul tabelei**. Tabele cu sub ~10.000 de rânduri pot fi replicate cu cost de stocare neglijabil. Pentru tabele mari (fact tables cu sute de mii sau milioane de rânduri), replicarea devine prohibitivă în spațiu și în timp de sincronizare.
+2. **Raportul citire/scriere**. Tabele cu citire frecventă și scriere rară (tipice pentru lookup-uri și date master) beneficiază maxim de replicare — cititorii locali nu mai depind de comunicarea cu nodul-master. Tabele cu scriere frecventă (fact tables) sunt slabe candidate, deoarece sincronizarea ar deveni costisitoare.
+3. **Locația join-urilor**. Dacă o tabelă este join-uită frecvent cu fact tables într-un nod specific, replicarea ei în acel nod elimină hop-uri remote din planurile de execuție. Atunci când join-urile sunt mai rare sau ad-hoc, accesul prin database link cu remote scan este suficient.
+
+Aplicarea acestor criterii produce deciziile concrete:
+
+| Tabel | Master în | Replicat în | Justificare |
+|---|---|---|---|
+| `zone` | DISTRIBUTIE | VANZARI | Volum mic (5 rânduri), citită în orice raport de vânzări pe zonă. Replicarea elimină 1 hop la fiecare query. |
+| `clienti` | DISTRIBUTIE | VANZARI | Volum mic (10 rânduri), FK cross-PDB din `FISE_CLIENTI` — replicarea permite enforcement local al constrângerii. |
+| `items_core` | CATALOG | VANZARI | 3.192 rânduri, FK cross-PDB din `LINII_DOC` — necesar pentru enforcement local. |
+| `brands` | CATALOG | VANZARI | 131 rânduri, join frecvent în rapoarte (top branduri vândute). |
+| `items_category` | CATALOG | VANZARI | 15 rânduri, join obligatoriu în cererea complexă (top agenți pe categorie). |
+| `items_type` | CATALOG | VANZARI | 3 rânduri, lookup în rapoarte sezoniere. |
+| `items_seasons` | CATALOG | VANZARI | 17 rânduri, lookup în rapoarte sezoniere. |
+| `items_extra` | CATALOG | nicăieri | Atribute administrative (cost, furnizor), acces strict local pentru rolul de admin produse. |
+| `agenti` | DISTRIBUTIE | nicăieri | Acces ad-hoc din cererea complexă; replicarea ar avea cost de sincronizare fără beneficiu măsurabil în absența join-urilor frecvente. |
+| `zone_agenti`, `zone_intervale_plata` | DISTRIBUTIE | nicăieri | Asocieri temporale M:N — accesate doar prin DB link în cererea complexă, cu predicate temporale restrictive. |
+| `intervale_plata`, `intervale_plata_zile` | DISTRIBUTIE | nicăieri | Acces ad-hoc, lookup pentru calculul scadențelor. |
+| `fise_clienti_*`, `linii_doc_*` | VANZARI | nicăieri | Fact tables fragmentate orizontal; volum mare, scriere intensă. Replicarea ar contraveni întregului design distribuit. |
+
+Replicarea se implementează prin materialized views cu refresh FAST în mod ON DEMAND. Logurile de materialized view (`CREATE MATERIALIZED VIEW LOG ON tabel ...`) instalate pe tabela master capturează modificările incremental, iar refresh-ul propagă doar delta — un mecanism eficient pentru volume mici și moderate. Sincronizarea se face printr-un job DBMS_SCHEDULER cu interval de 60 de secunde, ales ca trade-off între prospețime și cost de overhead. Lag-ul maxim acceptat (60 secunde) este compatibil cu rapoartele și operațiile interactive obișnuite; pentru cazuri care necesită prospețime maximă (de exemplu, demo-uri ale propagării LMD), refresh-ul poate fi forțat manual prin `DBMS_MVIEW.REFRESH(...)`.
 
 # 7. Schemele conceptuale locale
 
