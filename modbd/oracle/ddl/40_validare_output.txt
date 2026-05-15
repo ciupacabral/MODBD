@@ -1,0 +1,54 @@
+=== Test 1: Counts globale ===
+
+T			       N
+--------------------- ----------
+distributie.clienti	      10
+distributie.zone	       5
+catalog.items_core	    3192
+vanzari.v_fise		    2048
+vanzari.v_linii 	    5518
+vanzari.mv_clienti	      10
+vanzari.mv_items_core	    3192
+
+7 rows selected.
+
+=== Test 2: View total = sum fragments ===
+
+ DIFF_FISE
+----------
+	 0
+
+=== Test 3: INSTEAD OF INSERT pe V_FISE ===
+
+1 row created.
+
+
+1 row created.
+
+
+     IN_RO
+----------
+	 1
+
+
+    IN_EXT
+----------
+	 1
+
+
+Rollback complete.
+
+=== Test 4: FK cross-PDB rejects bad client ===
+FK OK: ORA-02291: integrity constraint (SGBD_VANZARI.FK_FISE_RO_CLIENT) violated - parent key not found
+
+PL/SQL procedure successfully completed.
+
+=== Test 5: Manual refresh MV ===
+
+PL/SQL procedure successfully completed.
+
+
+MV_CLIENTI_COUNT
+----------------
+	      10
+
