@@ -1,0 +1,144 @@
+---
+title: Schema Conceptuala OLTP - vedere globala
+---
+erDiagram
+  ZONE {
+    bigint id PK
+    varchar cod_zona UK
+    varchar den_zona
+    varchar tip_zona
+    bigint parent_zona_id FK
+  }
+  AGENTI {
+    bigint id PK
+    varchar cod_agent UK
+    varchar nume_agent
+    varchar email
+  }
+  CLIENTI {
+    bigint id PK
+    varchar cod_client UK
+    varchar denumire_client
+    varchar tip_client
+    bigint id_zona FK
+    date start_date
+    date end_date
+  }
+  CLIENTI_CONTACTE {
+    varchar cod_client PK
+    varchar email_client
+    varchar email_agent
+  }
+  INTERVALE_PLATA {
+    bigint id PK
+    varchar den_interval UK
+  }
+  INTERVALE_PLATA_ZILE {
+    bigint id_interval PK
+    varchar per_zile PK
+    int zile_start
+    int zile_end
+  }
+  ZONE_AGENTI {
+    bigint id PK
+    bigint id_zona FK
+    bigint id_agent FK
+    date start_date
+    date end_date
+  }
+  ZONE_INTERVALE_PLATA {
+    bigint id PK
+    bigint id_zona FK
+    bigint id_interval FK
+    date start_date
+    date end_date
+  }
+  FISE_CLIENTI {
+    bigint id PK
+    varchar nr_document
+    varchar nr_doc_initial
+    char tip_doc
+    char doc_type_xrp
+    date data_doc_efectiva
+    date data_scad
+    int semn
+    varchar moneda
+    decimal amount_doc
+    decimal amount_doc_ron
+    varchar plata_prin
+    varchar cod_client FK
+    varchar denumire_client
+    varchar clasa_client
+  }
+  LINII_DOC {
+    bigint id PK
+    char doc_type_xrp FK
+    varchar nr_document FK
+    varchar item_code FK
+    decimal item_qty
+    decimal xrp_doc_valoare_fara_tva
+    decimal xrp_doc_tva
+    decimal xrp_doc_procent_tva
+    decimal xrp_doc_valoare_totala
+    varchar xrp_linie_is_with_vat
+    decimal xrp_linie_valoare_fara_tva
+    decimal xrp_linie_tva
+    decimal xrp_linie_proc_tva
+  }
+  MS_ITEMS {
+    bigint id PK
+    varchar item_code UK
+    varchar item_name
+    varchar item_description
+    bigint brand_id FK
+    bigint season_id FK
+    bigint item_type_id FK
+    bigint category_id FK
+    float vat
+    decimal last_cost_price
+    varchar main_barcode
+    varchar supplier_code
+    decimal weight
+    varchar um
+    int active
+  }
+  BRANDS {
+    bigint id PK
+    varchar code UK
+    varchar brand
+    varchar description
+  }
+  ITEMS_CATEGORY {
+    bigint id PK
+    varchar code UK
+    varchar category
+    varchar name
+  }
+  ITEMS_TYPE {
+    bigint id PK
+    varchar code UK
+    varchar item_type
+    varchar description
+  }
+  ITEMS_SEASONS {
+    bigint id PK
+    varchar code UK
+    varchar description
+    varchar season_year
+    int active
+  }
+  ZONE ||--o{ CLIENTI : "id_zona"
+  ZONE ||--o{ ZONE : "parent"
+  ZONE ||--o{ ZONE_AGENTI : ""
+  AGENTI ||--o{ ZONE_AGENTI : ""
+  ZONE ||--o{ ZONE_INTERVALE_PLATA : ""
+  INTERVALE_PLATA ||--o{ ZONE_INTERVALE_PLATA : ""
+  INTERVALE_PLATA ||--o{ INTERVALE_PLATA_ZILE : ""
+  CLIENTI ||--o| CLIENTI_CONTACTE : "cod_client"
+  CLIENTI ||--o{ FISE_CLIENTI : "cod_client"
+  FISE_CLIENTI ||--o{ LINII_DOC : "nr_document+doc_type_xrp"
+  MS_ITEMS ||--o{ LINII_DOC : "item_code"
+  BRANDS ||--o{ MS_ITEMS : "brand_id"
+  ITEMS_CATEGORY ||--o{ MS_ITEMS : "category_id"
+  ITEMS_TYPE ||--o{ MS_ITEMS : "item_type_id"
+  ITEMS_SEASONS ||--o{ MS_ITEMS : "season_id"
