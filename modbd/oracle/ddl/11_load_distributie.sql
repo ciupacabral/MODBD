@@ -7,8 +7,8 @@
 --   - CHARACTERSET UTF8       : ignora BOM-ul UTF-8 de la inceput
 --   - LRTRIM                  : strip \r trailing (CSV-uri cu line endings CRLF)
 --   - NOLOGFILE NOBADFILE
---     NODISCARDFILE           : mount-ul /csv e read-only (':ro' in docker),
---                               nu putem scrie log-uri de loader acolo
+--     NODISCARDFILE           : daca directorul CSV este read-only,
+--                               loader-ul nu va incerca sa scrie log-uri acolo
 --   - REJECT LIMIT UNLIMITED  : nu abandona daca apar randuri rejectate
 --
 -- Tratarea 'NULL' (string in CSV):
