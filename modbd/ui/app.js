@@ -19,7 +19,8 @@ const app = {
         if (id === 'global-items') this.loadItems();
         if (id === 'global-fise') this.loadFise();
         if (id === 'global-linii') this.loadLinii();
-        if (id === 'mv-replicare') { 
+        if (id === 'global-documents') this.initDocumentForm();
+        if (id === 'mv-replicare') {
             this.loadMvMaster(); 
             this.loadMvReplica(); 
             this.loadMvItemsMaster(); 
@@ -63,8 +64,9 @@ const app = {
             tbody.innerHTML = result.data.map(r => `<tr>
                 <td>${r.id}</td><td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.tipClient}</td>
                 <td>${r.idZona}</td><td>${r.startDate ? new Date(r.startDate).toLocaleDateString('ro-RO') : '-'}</td>
+                <td>${r.endDate ? new Date(r.endDate).toLocaleDateString('ro-RO') : '-'}</td>
                 <td class="action-cell">
-                    <button class="btn-edit" onclick="app.editClient(${r.id}, '${r.codClient}', '${r.denumireClient.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${r.tipClient}', ${r.idZona})">✏️</button>
+                    <button class="btn-edit" onclick="app.editClient(${r.id}, '${r.codClient}', '${r.denumireClient.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${r.tipClient}', ${r.idZona}, ${r.endDate ? `'${r.endDate}'` : 'null'})">✏️</button>
                     <button class="btn-delete" onclick="app.deleteClient(${r.id})">🗑️</button>
                 </td>
             </tr>`).join('');
@@ -78,12 +80,13 @@ const app = {
         this.filterClientiTimer = setTimeout(() => this.loadClienti(1), 300);
     },
 
-    editClient(id, cod, nume, tip, idZona) {
+    editClient(id, cod, nume, tip, idZona, endDate) {
         document.getElementById('c-edit-id').value = id;
         document.getElementById('c-cod').value = cod;
         document.getElementById('c-nume').value = nume;
         document.getElementById('c-tip').value = tip;
         document.getElementById('c-zona').value = idZona;
+        document.getElementById('c-end-date').value = endDate ? endDate.substring(0, 10) : '';
         document.getElementById('form-clienti-title').innerText = 'Editează Client #' + id;
         document.getElementById('btn-cancel-client').style.display = 'block';
     },
@@ -92,17 +95,20 @@ const app = {
         document.getElementById('c-edit-id').value = '';
         document.getElementById('c-cod').value = '';
         document.getElementById('c-nume').value = '';
+        document.getElementById('c-end-date').value = '';
         document.getElementById('form-clienti-title').innerText = 'Adaugă Client';
         document.getElementById('btn-cancel-client').style.display = 'none';
     },
 
     async saveClient() {
         const editId = document.getElementById('c-edit-id').value;
+        const endDateVal = document.getElementById('c-end-date').value;
         const body = {
             codClient: document.getElementById('c-cod').value,
             denumireClient: document.getElementById('c-nume').value,
             tipClient: document.getElementById('c-tip').value,
-            idZona: parseInt(document.getElementById('c-zona').value) || 1
+            idZona: parseInt(document.getElementById('c-zona').value) || 1,
+            endDate: endDateVal ? endDateVal : null
         };
 
         if (editId) {
@@ -187,9 +193,12 @@ const app = {
             const res = await fetch(url);
             const result = await res.json();
             tbody.innerHTML = result.data.map(r => `<tr>
-                <td>${r.id}</td><td>${r.nrDocument}</td><td>${r.tipDoc}</td><td>${r.docTypeXrp}</td>
+                <td>${r.id}</td><td>${r.nrDocument}</td><td>${r.nrDocInitial || '-'}</td>
+                <td>${r.tipDoc}</td><td>${r.docTypeXrp}</td>
                 <td>${r.dataDocEfectiva ? new Date(r.dataDocEfectiva).toLocaleDateString('ro-RO') : '-'}</td>
+                <td>${r.dataScad ? new Date(r.dataScad).toLocaleDateString('ro-RO') : '-'}</td>
                 <td>${r.semn}</td><td>${r.moneda}</td><td>${r.amountDoc}</td><td>${r.amountDocRon}</td>
+                <td>${r.plataPrin || '-'}</td>
                 <td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.clasaClient}</td>
             </tr>`).join('');
             this.renderPagination('pagination-fise-ro', result.page, result.totalPages, 'app.loadFiseRo');
@@ -210,9 +219,12 @@ const app = {
             const res = await fetch(url);
             const result = await res.json();
             tbody.innerHTML = result.data.map(r => `<tr>
-                <td>${r.id}</td><td>${r.nrDocument}</td><td>${r.tipDoc}</td><td>${r.docTypeXrp}</td>
+                <td>${r.id}</td><td>${r.nrDocument}</td><td>${r.nrDocInitial || '-'}</td>
+                <td>${r.tipDoc}</td><td>${r.docTypeXrp}</td>
                 <td>${r.dataDocEfectiva ? new Date(r.dataDocEfectiva).toLocaleDateString('ro-RO') : '-'}</td>
+                <td>${r.dataScad ? new Date(r.dataScad).toLocaleDateString('ro-RO') : '-'}</td>
                 <td>${r.semn}</td><td>${r.moneda}</td><td>${r.amountDoc}</td><td>${r.amountDocRon}</td>
+                <td>${r.plataPrin || '-'}</td>
                 <td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.clasaClient}</td>
             </tr>`).join('');
             this.renderPagination('pagination-fise-ext', result.page, result.totalPages, 'app.loadFiseExt');
@@ -250,8 +262,13 @@ const app = {
             const res = await fetch(url);
             const result = await res.json();
             tbody.innerHTML = result.data.map(r => `<tr>
-                <td>${r.id}</td><td>${r.nrDocument}</td><td>${r.docType}</td><td>${r.moneda}</td>
+                <td>${r.id}</td><td>${r.nrDocument}</td><td>${r.nrDocInitial || '-'}</td>
+                <td>${r.docType}</td>
+                <td>${r.dataDocEfectiva ? new Date(r.dataDocEfectiva).toLocaleDateString('ro-RO') : '-'}</td>
+                <td>${r.dataScad ? new Date(r.dataScad).toLocaleDateString('ro-RO') : '-'}</td>
+                <td>${r.moneda}</td>
                 <td>${r.amount}</td><td>${r.amountRon}</td>
+                <td>${r.plataPrin || '-'}</td>
                 <td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.clasaClient}</td>
             </tr>`).join('');
             this.renderPagination('pagination-fise', result.page, result.totalPages, 'app.loadFise');
@@ -275,8 +292,15 @@ const app = {
             const result = await res.json();
             tbody.innerHTML = result.data.map(r => `<tr>
                 <td>${r.id}</td><td>${r.docTypeXrp}</td><td>${r.nrDocument}</td><td>${r.itemCode}</td>
-                <td>${r.itemQty ?? '-'}</td><td>${r.valoareFaraTva ?? '-'}</td>
-                <td>${r.tva ?? '-'}</td><td>${r.valoareTotala ?? '-'}</td>
+                <td>${r.itemQty ?? '-'}</td>
+                <td>${r.valoareFaraTva ?? '-'}</td>
+                <td>${r.tva ?? '-'}</td>
+                <td>${r.procentTva ?? '-'}</td>
+                <td>${r.valoareTotala ?? '-'}</td>
+                <td>${r.linieIsWithVat ?? '-'}</td>
+                <td>${r.linieValoareFaraTva ?? '-'}</td>
+                <td>${r.linieTva ?? '-'}</td>
+                <td>${r.linieProcTva ?? '-'}</td>
             </tr>`).join('');
             this.renderPagination('pagination-linii', result.page, result.totalPages, 'app.loadLinii');
         } catch (e) { tbody.innerHTML = '<tr><td colspan="8">Eroare încărcare</td></tr>'; }
@@ -374,15 +398,203 @@ const app = {
     },
 
     async addFisa() {
+        const nrInitial = document.getElementById('f-nr-initial').value.trim();
+        const dataScad = document.getElementById('f-data-scad').value;
+        const plataPrin = document.getElementById('f-plata-prin').value;
         const body = {
             nrDocument: document.getElementById('f-nr').value,
+            nrDocInitial: nrInitial || null,
             docType: 'INV',
             moneda: document.getElementById('f-moneda').value,
-            amount: parseFloat(document.getElementById('f-val').value)
+            amount: parseFloat(document.getElementById('f-val').value),
+            dataScad: dataScad || null,
+            plataPrin: plataPrin || null
         };
         await fetch(`${API_BASE}/global/fise`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         this.loadFise();
         document.getElementById('f-nr').value = '';
+        document.getElementById('f-nr-initial').value = '';
+        document.getElementById('f-data-scad').value = '';
+        document.getElementById('f-plata-prin').value = '';
+    },
+
+    // =====================================================================
+    // GLOBAL: Document cu Linii (INSERT atomic header + linii via INSERT ALL)
+    // =====================================================================
+
+    async initDocumentForm() {
+        // Reset form
+        const container = document.getElementById('linii-container');
+        if (container && container.children.length === 0) {
+            this.addLinieRow();
+        }
+        // Populeaza dropdown-ul de clienti
+        const clientSelect = document.getElementById('d-client');
+        if (clientSelect && clientSelect.options.length <= 1) {
+            try {
+                const res = await fetch(`${API_BASE}/distributie/clienti?page=1&pageSize=100`);
+                const result = await res.json();
+                clientSelect.innerHTML = '<option value="">— Selectează client —</option>' +
+                    result.data.map(c => `<option value="${c.codClient}">${c.codClient} — ${c.denumireClient}</option>`).join('');
+            } catch (e) {
+                clientSelect.innerHTML = '<option value="">Eroare încărcare clienți</option>';
+            }
+        }
+        // Populeaza datalist-ul cu coduri de produse
+        const datalist = document.getElementById('items-datalist');
+        if (datalist && datalist.children.length === 0) {
+            try {
+                const res = await fetch(`${API_BASE}/global/items?page=1&pageSize=200`);
+                const result = await res.json();
+                datalist.innerHTML = result.data.map(i => `<option value="${i.itemCode}">${i.itemName}</option>`).join('');
+            } catch (e) { /* silent */ }
+        }
+    },
+
+    addLinieRow() {
+        const tbody = document.getElementById('linii-container');
+        const tr = document.createElement('tr');
+        tr.className = 'linie-row';
+        tr.innerHTML = `
+            <td><input type="text" class="l-item" list="items-datalist" placeholder="Cod produs" style="width: 130px;"></td>
+            <td><input type="number" class="l-qty" step="0.01" value="1" style="width: 70px;" oninput="app.recalcSuma()"></td>
+            <td><input type="number" class="l-val" step="0.01" value="0" style="width: 100px;" oninput="app.recalcSuma()"></td>
+            <td><input type="number" class="l-tva" step="0.01" value="0" style="width: 90px;" oninput="app.recalcSuma()"></td>
+            <td><input type="number" class="l-pct" step="0.01" placeholder="19" style="width: 70px;"></td>
+            <td>
+                <select class="l-wvat" style="width: 70px;">
+                    <option value="">auto</option>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select>
+            </td>
+            <td><input type="number" class="l-lin-val" step="0.01" placeholder="(=doc)" style="width: 100px;"></td>
+            <td><input type="number" class="l-lin-tva" step="0.01" placeholder="(=doc)" style="width: 90px;"></td>
+            <td><input type="number" class="l-lin-pct" step="0.01" placeholder="(=doc)" style="width: 70px;"></td>
+            <td class="l-total" style="font-weight: 600;">0.00</td>
+            <td><button type="button" class="btn-delete" onclick="app.removeLinieRow(this)">🗑️</button></td>
+        `;
+        tbody.appendChild(tr);
+        this.recalcSuma();
+    },
+
+    removeLinieRow(btn) {
+        const tr = btn.closest('tr');
+        tr.remove();
+        this.recalcSuma();
+    },
+
+    recalcSuma() {
+        let total = 0;
+        document.querySelectorAll('#linii-container .linie-row').forEach(row => {
+            const val = parseFloat(row.querySelector('.l-val').value) || 0;
+            const tva = parseFloat(row.querySelector('.l-tva').value) || 0;
+            const lineTotal = val + tva;
+            row.querySelector('.l-total').innerText = lineTotal.toFixed(2);
+            total += lineTotal;
+        });
+        document.getElementById('suma-linii').innerText = total.toFixed(2);
+        document.getElementById('amount-doc').innerText = total.toFixed(2);
+    },
+
+    async saveDocument() {
+        const status = document.getElementById('doc-status');
+        status.innerHTML = '';
+
+        const nrDocument = document.getElementById('d-nr').value.trim();
+        const nrDocInitial = document.getElementById('d-nr-initial').value.trim();
+        const moneda = document.getElementById('d-moneda').value;
+        const codClient = document.getElementById('d-client').value;
+        const dataScad = document.getElementById('d-data-scad').value;
+        const plataPrin = document.getElementById('d-plata-prin').value;
+
+        if (!nrDocument) {
+            status.innerHTML = '<span style="color:red">❌ Nr Document obligatoriu</span>';
+            return;
+        }
+        if (!codClient) {
+            status.innerHTML = '<span style="color:red">❌ Selectează un client</span>';
+            return;
+        }
+
+        const linii = [];
+        let totalCalc = 0;
+        const rows = document.querySelectorAll('#linii-container .linie-row');
+        for (const row of rows) {
+            const itemCode = row.querySelector('.l-item').value.trim();
+            const itemQty = parseFloat(row.querySelector('.l-qty').value) || 0;
+            const valoareFaraTva = parseFloat(row.querySelector('.l-val').value) || 0;
+            const tva = parseFloat(row.querySelector('.l-tva').value) || 0;
+
+            if (!itemCode) {
+                status.innerHTML = '<span style="color:red">❌ Toate liniile trebuie să aibă un cod de produs</span>';
+                return;
+            }
+
+            // Câmpurile opționale — trimitem null dacă userul nu a completat, ca să
+            // lăsăm backend-ul să le deducă (procentTva din raportul TVA/val,
+            // linie* = doc* etc.).
+            const pctRaw = row.querySelector('.l-pct').value;
+            const wvatRaw = row.querySelector('.l-wvat').value;
+            const linValRaw = row.querySelector('.l-lin-val').value;
+            const linTvaRaw = row.querySelector('.l-lin-tva').value;
+            const linPctRaw = row.querySelector('.l-lin-pct').value;
+
+            linii.push({
+                itemCode,
+                itemQty,
+                valoareFaraTva,
+                tva,
+                procentTva: pctRaw !== '' ? parseFloat(pctRaw) : null,
+                linieIsWithVat: wvatRaw || null,
+                linieValoareFaraTva: linValRaw !== '' ? parseFloat(linValRaw) : null,
+                linieTva: linTvaRaw !== '' ? parseFloat(linTvaRaw) : null,
+                linieProcTva: linPctRaw !== '' ? parseFloat(linPctRaw) : null
+            });
+            totalCalc += valoareFaraTva + tva;
+        }
+
+        if (linii.length === 0) {
+            status.innerHTML = '<span style="color:red">❌ Adaugă cel puțin o linie</span>';
+            return;
+        }
+
+        const body = {
+            nrDocument,
+            nrDocInitial: nrDocInitial || null,
+            docType: 'INV',
+            moneda,
+            amount: Math.round(totalCalc * 100) / 100,
+            dataScad: dataScad || null,
+            plataPrin: plataPrin || null,
+            codClient,
+            linii
+        };
+
+        status.innerHTML = '<span style="color:#0284c7">⏳ Se trimite documentul...</span>';
+        try {
+            const res = await fetch(`${API_BASE}/global/documents`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                status.innerHTML = `<span style="color:red">❌ ${data.error || 'Eroare la salvare'}</span>`;
+                return;
+            }
+            status.innerHTML = `<span style="color:green">✅ Document salvat: ${data.nrDocument || nrDocument} (header + ${linii.length} linii într-o singură tranzacție)</span>`;
+            // Reset form
+            document.getElementById('d-nr').value = '';
+            document.getElementById('d-nr-initial').value = '';
+            document.getElementById('d-data-scad').value = '';
+            document.getElementById('d-plata-prin').value = '';
+            document.getElementById('linii-container').innerHTML = '';
+            this.addLinieRow();
+            this.recalcSuma();
+        } catch (e) {
+            status.innerHTML = `<span style="color:red">❌ Eroare de rețea: ${e.message}</span>`;
+        }
     },
 
     // =====================================================================

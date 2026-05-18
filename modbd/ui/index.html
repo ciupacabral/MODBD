@@ -19,6 +19,7 @@
             <button onclick="app.showSection('global-items')">Global: Produse</button>
             <button onclick="app.showSection('global-fise')">Global: Facturi</button>
             <button onclick="app.showSection('global-linii')">Global: Linii Doc</button>
+            <button onclick="app.showSection('global-documents')">Global: Document + Linii</button>
             <button onclick="app.showSection('mv-replicare')">Replicare MV</button>
         </nav>
         <div id="api-status">Status API: Verificare...</div>
@@ -41,6 +42,7 @@
                                 <th>Tip Client</th>
                                 <th>ID Zona</th>
                                 <th>Start Date</th>
+                                <th>End Date</th>
                                 <th>Acțiuni</th>
                             </tr>
                         </thead>
@@ -61,6 +63,8 @@
                     <select id="c-zona">
                         <option value="1">Se incarca zonele...</option>
                     </select>
+                    <label style="font-size: 0.85em; color: #475569;">End Date (opțional, lasă gol pentru clienți activi):</label>
+                    <input type="date" id="c-end-date" placeholder="End Date (opțional)">
                     <button onclick="app.saveClient()">Salvează</button>
                     <button onclick="app.cancelEditClient()" id="btn-cancel-client" style="display:none; background:#6b7280; margin-top:8px;">Anulează Editarea</button>
                 </div>
@@ -127,13 +131,16 @@
                         <tr>
                             <th>ID</th>
                             <th>Nr Document</th>
+                            <th>Nr Doc Inițial</th>
                             <th>Tip Doc</th>
                             <th>Doc Type XRP</th>
                             <th>Data Doc</th>
+                            <th>Data Scad</th>
                             <th>Semn</th>
                             <th>Moneda</th>
                             <th>Valoare</th>
                             <th>Val. RON</th>
+                            <th>Plata Prin</th>
                             <th>Cod Client</th>
                             <th>Client</th>
                             <th>Clasă</th>
@@ -157,13 +164,16 @@
                         <tr>
                             <th>ID</th>
                             <th>Nr Document</th>
+                            <th>Nr Doc Inițial</th>
                             <th>Tip Doc</th>
                             <th>Doc Type XRP</th>
                             <th>Data Doc</th>
+                            <th>Data Scad</th>
                             <th>Semn</th>
                             <th>Moneda</th>
                             <th>Valoare</th>
                             <th>Val. RON</th>
+                            <th>Plata Prin</th>
                             <th>Cod Client</th>
                             <th>Client</th>
                             <th>Clasă</th>
@@ -223,10 +233,14 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Nr Document</th>
+                                <th>Nr Doc Inițial</th>
                                 <th>Doc Type</th>
+                                <th>Data Doc</th>
+                                <th>Data Scad</th>
                                 <th>Moneda</th>
                                 <th>Valoare</th>
                                 <th>Val. RON</th>
+                                <th>Plata Prin</th>
                                 <th>Cod Client</th>
                                 <th>Client</th>
                                 <th>Clasă</th>
@@ -240,12 +254,22 @@
                 <div class="form-card">
                     <h3>Adauga Factura (via V_FISE_CLIENTI)</h3>
                     <input type="text" id="f-nr" placeholder="Nr Document">
+                    <input type="text" id="f-nr-initial" placeholder="Nr Doc Inițial (opțional)">
                     <select id="f-moneda">
                         <option>RON</option>
                         <option>EUR</option>
                         <option>USD</option>
                     </select>
                     <input type="number" id="f-val" placeholder="Valoare" value="100">
+                    <label style="font-size: 0.85em; color: #475569;">Data Scadență (opțional):</label>
+                    <input type="date" id="f-data-scad">
+                    <select id="f-plata-prin">
+                        <option value="">— Plata Prin (opțional) —</option>
+                        <option value="OP">OP - Ordin de plată</option>
+                        <option value="CASH">CASH - Numerar</option>
+                        <option value="CARD">CARD - Card bancar</option>
+                        <option value="TRANSFER">TRANSFER</option>
+                    </select>
                     <button onclick="app.addFisa()">Salvează</button>
                 </div>
             </div>
@@ -264,15 +288,81 @@
                             <th>Nr Doc</th>
                             <th>Cod Produs</th>
                             <th>Cantitate</th>
-                            <th>Valoare fara TVA</th>
-                            <th>TVA</th>
-                            <th>Valoare Totala</th>
+                            <th>Val. fără TVA (doc)</th>
+                            <th>TVA (doc)</th>
+                            <th>% TVA (doc)</th>
+                            <th>Total (doc)</th>
+                            <th>With VAT</th>
+                            <th>Val. fără TVA (linie)</th>
+                            <th>TVA (linie)</th>
+                            <th>% TVA (linie)</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-linii"></tbody>
                 </table>
                 <div id="pagination-linii" class="pagination-controls"></div>
                 <button onclick="app.loadLinii()">Reincarcă Tabel</button>
+            </div>
+        </section>
+
+        <!-- ==================== GLOBAL: DOCUMENT + LINII (atomic INSERT) ==================== -->
+        <section id="global-documents" class="view-section" style="display:none;">
+            <h2>Vizualizare Globală — Document cu Linii (Inserție Atomică)</h2>
+            <p>Cerința 4: Inserare atomică a unui document și a liniilor sale prin <code>V_FISE_CLIENTI</code> + <code>V_LINII_DOC</code>. Trigger-ul compound <code>trg_coerenta_sum_*</code> verifică la <code>AFTER STATEMENT</code> că <code>SUM(linii) = amount_doc</code>. Backend-ul folosește tehnica <code>INSERT ALL</code> pentru a insera toate liniile într-un singur statement, astfel încât trigger-ul de coerență nu raportează fals-pozitiv.</p>
+            <div class="form-card" style="max-width: 1100px;">
+                <h3>📄 Document Nou</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 8px;">
+                    <input type="text" id="d-nr" placeholder="Nr Document (ex: DOC2026001)">
+                    <select id="d-moneda">
+                        <option>RON</option>
+                        <option>EUR</option>
+                        <option>USD</option>
+                    </select>
+                    <select id="d-client">
+                        <option value="">Se încarcă clienții...</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+                    <input type="text" id="d-nr-initial" placeholder="Nr Doc Inițial (opțional)">
+                    <input type="date" id="d-data-scad" title="Data scadență (opțional)">
+                    <select id="d-plata-prin">
+                        <option value="">— Plata Prin (opțional) —</option>
+                        <option value="OP">OP - Ordin de plată</option>
+                        <option value="CASH">CASH - Numerar</option>
+                        <option value="CARD">CARD - Card bancar</option>
+                        <option value="TRANSFER">TRANSFER</option>
+                    </select>
+                </div>
+
+                <h4 style="margin-top: 16px;">Linii Document <small style="color:#64748b; font-weight: normal;">(coloanele „linie" sunt opționale — dacă le lași goale, backend-ul copiază valorile de la nivel document)</small></h4>
+                <table id="linii-table">
+                    <thead>
+                        <tr>
+                            <th>Cod Produs</th>
+                            <th>Cant.</th>
+                            <th>Val. fără TVA (doc)</th>
+                            <th>TVA (doc)</th>
+                            <th>% TVA (opt)</th>
+                            <th>With VAT (opt)</th>
+                            <th>Val. linie (opt)</th>
+                            <th>TVA linie (opt)</th>
+                            <th>% linie (opt)</th>
+                            <th>Total linie</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="linii-container"></tbody>
+                </table>
+                <datalist id="items-datalist"></datalist>
+                <button type="button" onclick="app.addLinieRow()" style="margin-top: 8px;">+ Adaugă linie</button>
+
+                <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #0284c7;">
+                    <p style="margin: 0;"><strong>Sumă linii (calculată automat):</strong> <span id="suma-linii">0.00</span></p>
+                    <p style="margin: 4px 0 0 0;"><strong>Amount Doc (header):</strong> <span id="amount-doc">0.00</span> <em style="color: #475569;">— sincronizat cu suma liniilor (trigger-ul cere coerență)</em></p>
+                </div>
+
+                <button type="button" onclick="app.saveDocument()" style="margin-top: 12px; background: #16a34a;">💾 Salvează Document (atomic)</button>
+                <div id="doc-status" style="margin-top: 12px;"></div>
             </div>
         </section>
 

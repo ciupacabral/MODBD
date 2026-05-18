@@ -13,28 +13,37 @@ namespace ModbdApi.Models
         
         [Column("NR_DOCUMENT")]
         public string NrDocument { get; set; } = "";
-        
+
+        [Column("NR_DOC_INITIAL")]
+        public string? NrDocInitial { get; set; }
+
         [Column("TIP_DOC")]
         public string TipDoc { get; set; } = "F";
-        
+
         [Column("DOC_TYPE_XRP")]
         public string DocTypeXrp { get; set; } = "INV";
-        
+
         [Column("DATA_DOC_EFECTIVA")]
         public DateTime DataDocEfectiva { get; set; }
-        
+
+        [Column("DATA_SCAD")]
+        public DateTime? DataScad { get; set; }
+
         [Column("SEMN")]
         public int Semn { get; set; } = 1;
-        
+
         [Column("MONEDA")]
         public string Moneda { get; set; } = "EUR";
-        
+
         [Column("AMOUNT_DOC")]
         public decimal AmountDoc { get; set; }
-        
+
         [Column("AMOUNT_DOC_RON")]
         public decimal AmountDocRon { get; set; }
-        
+
+        [Column("PLATA_PRIN")]
+        public string? PlataPrin { get; set; }
+
         [Column("COD_CLIENT")]
         public string CodClient { get; set; } = "";
         

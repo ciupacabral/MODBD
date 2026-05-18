@@ -13,7 +13,10 @@ namespace ModbdApi.Models
         
         [Column("NR_DOCUMENT")]
         public string NrDocument { get; set; } = "";
-        
+
+        [Column("NR_DOC_INITIAL")]
+        public string? NrDocInitial { get; set; }
+
         [Column("DOC_TYPE_XRP")]
         public string DocType { get; set; } = "INV";
         
@@ -43,5 +46,11 @@ namespace ModbdApi.Models
         
         [Column("DATA_DOC_EFECTIVA")]
         public DateTime DataDocEfectiva { get; set; }
+
+        [Column("DATA_SCAD")]
+        public DateTime? DataScad { get; set; }
+
+        [Column("PLATA_PRIN")]
+        public string? PlataPrin { get; set; }
     }
 }

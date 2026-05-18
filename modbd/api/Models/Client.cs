@@ -25,5 +25,8 @@ namespace ModbdApi.Models
         
         [Column("START_DATE")]
         public DateTime StartDate { get; set; }
+
+        [Column("END_DATE")]
+        public DateTime? EndDate { get; set; }
     }
 }
