@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MODBD - Interfață Simplificată</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Magazin de incaltaminte</h1>
+        <nav>
+            <button onclick="app.showSection('local-distributie')">Local: Distribuție</button>
+            <button onclick="app.showSection('global-items')">Global: Produse</button>
+            <button onclick="app.showSection('global-fise')">Global: Facturi</button>
+        </nav>
+        <div id="api-status">Status API: Verificare...</div>
+    </header>
+
+    <main>
+        <section id="local-distributie" class="view-section">
+            <h2>Informatii client</h2>
+            <div class="split-layout">
+                <div>
+                    <input type="text" id="search-clienti" placeholder="🔍 Caută după Cod Client..." onkeyup="app.filterClienti()" class="search-input">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cod</th>
+                                <th>Nume</th>
+                                <th>Tip</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-clienti"></tbody>
+                    </table>
+                    <div id="pagination-clienti" class="pagination-controls"></div>
+                    <button onclick="app.loadClienti()">Reincarcă Tabel</button>
+                </div>
+                <div class="form-card">
+                    <h3>Adauga Client</h3>
+                    <input type="text" id="c-cod" placeholder="Cod Client (ex: CLI01)">
+                    <input type="text" id="c-nume" placeholder="Nume Client">
+                    <select id="c-tip">
+                        <option>CLIENT</option>
+                        <option>VIP</option>
+                    </select>
+                    <select id="c-zona">
+                        <option value="1">Se incarca zonele...</option>
+                    </select>
+                    <button onclick="app.addClient()">Salveaza</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="global-items" class="view-section" style="display:none;">
+            <h2>Vizualizare Globala - Produse</h2>
+            <div class="split-layout">
+                <div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cod</th>
+                                <th>Nume</th>
+                                <th>Descriere</th>
+                                <th>Activ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-items"></tbody>
+                    </table>
+                    <div id="pagination-items" class="pagination-controls"></div>
+                    <button onclick="app.loadItems()">Reincarca Tabel</button>
+                </div>
+                <div class="form-card">
+                    <h3>Adauga Produs</h3>
+                    <input type="text" id="i-cod" placeholder="Cod Produs">
+                    <input type="text" id="i-nume" placeholder="Nume Produs">
+                    <input type="text" id="i-desc" placeholder="Descriere">
+                    <select id="i-activ">
+                        <option value="1">Activ</option>
+                        <option value="0">Inactiv</option>
+                    </select>
+                    <button onclick="app.addItem()">Salveaza</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="global-fise" class="view-section" style="display:none;">
+            <h2>Vizualizare Globala - Facturi</h2>
+            <div class="split-layout">
+                <div>
+                    <input type="text" id="search-fise" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFise()" class="search-input">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nr Doc</th>
+                                <th>Tip</th>
+                                <th>Moneda</th>
+                                <th>Valoare</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-fise"></tbody>
+                    </table>
+                    <div id="pagination-fise" class="pagination-controls"></div>
+                    <button onclick="app.loadFise()">Reincarca Tabel</button>
+                </div>
+                <div class="form-card">
+                    <h3>Adauga Factura</h3>
+                    <input type="text" id="f-nr" placeholder="Nr Document">
+                    <select id="f-moneda">
+                        <option>RON</option>
+                        <option>EUR</option>
+                        <option>USD</option>
+                    </select>
+                    <input type="number" id="f-val" placeholder="Valoare" value="100">
+                    <button onclick="app.addFisa()">Salveaza</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
