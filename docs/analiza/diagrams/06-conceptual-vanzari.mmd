@@ -1,92 +1,93 @@
 ---
-title: Schema conceptuala locala - PDB VANZARI (fragmente orizontale + MV-uri replicate)
+title: Schema conceptuala locala - PDB VANZARI (fragmente H + MV-uri replicate)
 ---
 erDiagram
   FISE_CLIENTI_RO {
-    bigint id PK
-    varchar nr_document
-    char doc_type_xrp
-    date data_doc_efectiva
-    varchar moneda "CHECK = RON"
-    decimal amount_doc
-    varchar cod_client FK
+    NUMBER_19 id PK
+    VARCHAR2_30 nr_document "UK compus"
+    CHAR_3 doc_type_xrp "UK compus"
+    CHAR_1 tip_doc "CHECK F,I"
+    VARCHAR2_10 moneda "CHECK = RON"
+    DATE data_doc_efectiva
+    NUMBER_17_2 amount_doc
+    VARCHAR2_60 cod_client FK "-> MV_CLIENTI"
   }
   FISE_CLIENTI_EXT {
-    bigint id PK
-    varchar nr_document
-    char doc_type_xrp
-    date data_doc_efectiva
-    varchar moneda "CHECK <> RON"
-    decimal amount_doc
-    varchar cod_client FK
+    NUMBER_19 id PK
+    VARCHAR2_30 nr_document "UK compus"
+    CHAR_3 doc_type_xrp "UK compus"
+    CHAR_1 tip_doc "CHECK F,I"
+    VARCHAR2_10 moneda "CHECK <> RON"
+    DATE data_doc_efectiva
+    NUMBER_17_2 amount_doc
+    VARCHAR2_60 cod_client FK "-> MV_CLIENTI"
   }
   LINII_DOC_RO {
-    bigint id PK
-    char doc_type_xrp FK
-    varchar nr_document FK
-    varchar item_code FK
-    decimal item_qty
-    decimal xrp_linie_valoare_fara_tva
-    decimal xrp_linie_tva
+    NUMBER_19 id PK
+    CHAR_3 doc_type_xrp FK "-> FISE_RO"
+    VARCHAR2_30 nr_document FK "-> FISE_RO"
+    VARCHAR2_50 item_code FK "-> MV_ITEMS_CORE"
+    NUMBER_13_2 item_qty
+    NUMBER_9_2 xrp_linie_valoare_fara_tva
+    NUMBER_9_2 xrp_linie_tva
   }
   LINII_DOC_EXT {
-    bigint id PK
-    char doc_type_xrp FK
-    varchar nr_document FK
-    varchar item_code FK
-    decimal item_qty
-    decimal xrp_linie_valoare_fara_tva
-    decimal xrp_linie_tva
+    NUMBER_19 id PK
+    CHAR_3 doc_type_xrp FK "-> FISE_EXT"
+    VARCHAR2_30 nr_document FK "-> FISE_EXT"
+    VARCHAR2_50 item_code FK "-> MV_ITEMS_CORE"
+    NUMBER_13_2 item_qty
+    NUMBER_9_2 xrp_linie_valoare_fara_tva
+    NUMBER_9_2 xrp_linie_tva
   }
   V_FISE_CLIENTI {
-    bigint id
-    varchar moneda
-    decimal amount_doc
+    NUMBER_19 id "VIEW: UNION ALL"
+    VARCHAR2_10 moneda "transparenta H"
+    NUMBER_17_2 amount_doc "INSTEAD OF triggers"
   }
   V_LINII_DOC {
-    bigint id
-    varchar item_code
+    NUMBER_19 id "VIEW: UNION ALL"
+    VARCHAR2_50 item_code "transparenta H"
   }
   MV_CLIENTI {
-    varchar cod_client PK
-    varchar denumire_client
-    bigint id_zona
+    VARCHAR2_60 cod_client PK "MV REFRESH FAST"
+    VARCHAR2_200 denumire_client "replicat din DISTRIBUTIE"
+    NUMBER_19 id_zona
   }
   MV_ZONE {
-    bigint id PK
-    varchar cod_zona
-    varchar den_zona
+    NUMBER_19 id PK "MV REFRESH FAST"
+    VARCHAR2_40 cod_zona "replicat din DISTRIBUTIE"
+    VARCHAR2_80 den_zona
   }
   MV_ITEMS_CORE {
-    bigint id PK
-    varchar item_code UK
-    varchar item_name
+    NUMBER_19 id PK "MV REFRESH FAST"
+    VARCHAR2_50 item_code UK "replicat din CATALOG"
+    VARCHAR2_350 item_name
   }
   MV_BRANDS {
-    bigint id PK
-    varchar code UK
-    varchar brand
+    NUMBER_19 id PK "replicat din CATALOG"
+    VARCHAR2_3 code UK
   }
   MV_ITEMS_CATEGORY {
-    bigint id PK
-    varchar code UK
-    varchar category
+    NUMBER_19 id PK "replicat din CATALOG"
+    VARCHAR2_2 code UK
   }
   MV_ITEMS_TYPE {
-    bigint id PK
-    varchar code UK
+    NUMBER_19 id PK "replicat din CATALOG"
+    VARCHAR2_4 code UK
   }
   MV_ITEMS_SEASONS {
-    bigint id PK
-    varchar code UK
+    NUMBER_19 id PK "replicat din CATALOG"
+    VARCHAR2_120 code UK
   }
-  FISE_CLIENTI_RO ||--o{ LINII_DOC_RO : "(nr_document, doc_type_xrp)"
-  FISE_CLIENTI_EXT ||--o{ LINII_DOC_EXT : "(nr_document, doc_type_xrp)"
-  FISE_CLIENTI_RO ||..|| V_FISE_CLIENTI : "UNION ALL"
+
+  FISE_CLIENTI_RO  ||--o{ LINII_DOC_RO  : "(nr_doc, doc_type)"
+  FISE_CLIENTI_EXT ||--o{ LINII_DOC_EXT : "(nr_doc, doc_type)"
+  FISE_CLIENTI_RO  ||..|| V_FISE_CLIENTI : "UNION ALL"
   FISE_CLIENTI_EXT ||..|| V_FISE_CLIENTI : "UNION ALL"
-  LINII_DOC_RO ||..|| V_LINII_DOC : "UNION ALL"
-  LINII_DOC_EXT ||..|| V_LINII_DOC : "UNION ALL"
-  MV_CLIENTI ||--o{ FISE_CLIENTI_RO : "fk_fise_ro_client"
-  MV_CLIENTI ||--o{ FISE_CLIENTI_EXT : "fk_fise_ext_client"
-  MV_ITEMS_CORE ||--o{ LINII_DOC_RO : "fk_lin_ro_item"
-  MV_ITEMS_CORE ||--o{ LINII_DOC_EXT : "fk_lin_ext_item"
+  LINII_DOC_RO     ||..|| V_LINII_DOC   : "UNION ALL"
+  LINII_DOC_EXT    ||..|| V_LINII_DOC   : "UNION ALL"
+  MV_CLIENTI       ||--o{ FISE_CLIENTI_RO  : "fk_fise_ro_client"
+  MV_CLIENTI       ||--o{ FISE_CLIENTI_EXT : "fk_fise_ext_client"
+  MV_ITEMS_CORE    ||--o{ LINII_DOC_RO  : "fk_lin_ro_item"
+  MV_ITEMS_CORE    ||--o{ LINII_DOC_EXT : "fk_lin_ext_item"

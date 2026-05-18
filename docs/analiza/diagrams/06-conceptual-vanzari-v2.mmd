@@ -1,0 +1,96 @@
+---
+title: Schema conceptuala locala - PDB VANZARI (fragmente H + MV-uri, ELK ortogonal)
+config:
+  layout: elk
+  look: classic
+---
+erDiagram
+  FISE_CLIENTI_RO {
+    NUMBER_19 id PK
+    VARCHAR2_30 nr_document
+    CHAR_3 doc_type_xrp
+    CHAR_1 tip_doc "CHECK F,I"
+    VARCHAR2_10 moneda "CHECK = RON"
+    DATE data_doc_efectiva
+    NUMBER_17_2 amount_doc
+    VARCHAR2_60 cod_client FK
+  }
+  FISE_CLIENTI_EXT {
+    NUMBER_19 id PK
+    VARCHAR2_30 nr_document
+    CHAR_3 doc_type_xrp
+    CHAR_1 tip_doc "CHECK F,I"
+    VARCHAR2_10 moneda "CHECK <> RON"
+    DATE data_doc_efectiva
+    NUMBER_17_2 amount_doc
+    VARCHAR2_60 cod_client FK
+  }
+  LINII_DOC_RO {
+    NUMBER_19 id PK
+    CHAR_3 doc_type_xrp FK
+    VARCHAR2_30 nr_document FK
+    VARCHAR2_50 item_code FK
+    NUMBER_13_2 item_qty
+    NUMBER_9_2 xrp_linie_valoare_fara_tva
+    NUMBER_9_2 xrp_linie_tva
+  }
+  LINII_DOC_EXT {
+    NUMBER_19 id PK
+    CHAR_3 doc_type_xrp FK
+    VARCHAR2_30 nr_document FK
+    VARCHAR2_50 item_code FK
+    NUMBER_13_2 item_qty
+    NUMBER_9_2 xrp_linie_valoare_fara_tva
+    NUMBER_9_2 xrp_linie_tva
+  }
+  V_FISE_CLIENTI {
+    NUMBER_19 id
+    VARCHAR2_10 moneda
+    NUMBER_17_2 amount_doc
+  }
+  V_LINII_DOC {
+    NUMBER_19 id
+    VARCHAR2_50 item_code
+  }
+  MV_CLIENTI {
+    VARCHAR2_60 cod_client PK
+    VARCHAR2_200 denumire_client
+    NUMBER_19 id_zona
+  }
+  MV_ZONE {
+    NUMBER_19 id PK
+    VARCHAR2_40 cod_zona
+    VARCHAR2_80 den_zona
+  }
+  MV_ITEMS_CORE {
+    NUMBER_19 id PK
+    VARCHAR2_50 item_code UK
+    VARCHAR2_350 item_name
+  }
+  MV_BRANDS {
+    NUMBER_19 id PK
+    VARCHAR2_3 code UK
+  }
+  MV_ITEMS_CATEGORY {
+    NUMBER_19 id PK
+    VARCHAR2_2 code UK
+  }
+  MV_ITEMS_TYPE {
+    NUMBER_19 id PK
+    VARCHAR2_4 code UK
+  }
+  MV_ITEMS_SEASONS {
+    NUMBER_19 id PK
+    VARCHAR2_120 code UK
+  }
+
+  FISE_CLIENTI_RO  ||--o{ LINII_DOC_RO   : "nr_doc + doc_type"
+  FISE_CLIENTI_EXT ||--o{ LINII_DOC_EXT  : "nr_doc + doc_type"
+  FISE_CLIENTI_RO  ||..|| V_FISE_CLIENTI : "UNION ALL"
+  FISE_CLIENTI_EXT ||..|| V_FISE_CLIENTI : "UNION ALL"
+  LINII_DOC_RO     ||..|| V_LINII_DOC    : "UNION ALL"
+  LINII_DOC_EXT    ||..|| V_LINII_DOC    : "UNION ALL"
+  MV_CLIENTI       ||--o{ FISE_CLIENTI_RO  : "fk_fise_ro_client"
+  MV_CLIENTI       ||--o{ FISE_CLIENTI_EXT : "fk_fise_ext_client"
+  MV_ITEMS_CORE    ||--o{ LINII_DOC_RO   : "fk_lin_ro_item"
+  MV_ITEMS_CORE    ||--o{ LINII_DOC_EXT  : "fk_lin_ext_item"

@@ -1,33 +1,34 @@
 ---
-title: Schema Conceptuala OLTP globala (Crow's foot, FN3)
+title: Schema Conceptuala OLTP globala (Crow's foot, layout ortogonal ELK)
 config:
   layout: elk
+  look: classic
 ---
 erDiagram
   ZONE {
-    NUMBER_19 id PK "cheie primara"
-    VARCHAR2_40 cod_zona UK "unicitate locala"
+    NUMBER_19 id PK
+    VARCHAR2_40 cod_zona UK
     VARCHAR2_80 den_zona "NOT NULL"
     VARCHAR2_10 tip_zona "NOT NULL"
-    NUMBER_19 parent_zona_id FK "self-FK ierarhie"
+    NUMBER_19 parent_zona_id FK
   }
   AGENTI {
     NUMBER_19 id PK
     VARCHAR2_20 cod_agent UK
     VARCHAR2_100 nume_agent "NOT NULL"
-    VARCHAR2_200 email "nullable"
+    VARCHAR2_200 email
   }
   CLIENTI {
     NUMBER_19 id PK
     VARCHAR2_60 cod_client UK
     VARCHAR2_200 denumire_client "NOT NULL"
     VARCHAR2_12 tip_client "NOT NULL"
-    NUMBER_19 id_zona FK "-> ZONE"
+    NUMBER_19 id_zona FK
     DATE start_date "NOT NULL"
     DATE end_date "CHECK > start"
   }
   CLIENTI_CONTACTE {
-    VARCHAR2_60 cod_client PK "PK = FK -> CLIENTI"
+    VARCHAR2_60 cod_client PK
     VARCHAR2_1000 email_client
     VARCHAR2_1000 email_agent
   }
@@ -36,45 +37,45 @@ erDiagram
     VARCHAR2_60 den_interval UK
   }
   INTERVALE_PLATA_ZILE {
-    NUMBER_19 id_interval PK "PK compus + FK"
-    VARCHAR2_40 per_zile PK "PK compus"
+    NUMBER_19 id_interval PK
+    VARCHAR2_40 per_zile PK
     NUMBER_10 zile_start "NOT NULL"
-    NUMBER_10 zile_end "nullable"
+    NUMBER_10 zile_end
   }
   ZONE_AGENTI {
     NUMBER_19 id PK
-    NUMBER_19 id_zona FK "-> ZONE"
-    NUMBER_19 id_agent FK "-> AGENTI"
+    NUMBER_19 id_zona FK
+    NUMBER_19 id_agent FK
     DATE start_date "NOT NULL"
     DATE end_date "CHECK > start"
   }
   ZONE_INTERVALE_PLATA {
     NUMBER_19 id PK
-    NUMBER_19 id_zona FK "-> ZONE"
-    NUMBER_19 id_interval FK "-> INTERVALE_PLATA"
+    NUMBER_19 id_zona FK
+    NUMBER_19 id_interval FK
     DATE start_date "NOT NULL"
     DATE end_date "CHECK > start"
   }
   FISE_CLIENTI {
     NUMBER_19 id PK
-    VARCHAR2_30 nr_document "parte din UK"
-    CHAR_3 doc_type_xrp "parte din UK"
-    CHAR_1 tip_doc "CHECK IN F,I"
-    VARCHAR2_10 moneda "fragm. predicat"
+    VARCHAR2_30 nr_document
+    CHAR_3 doc_type_xrp
+    CHAR_1 tip_doc "CHECK F,I"
+    VARCHAR2_10 moneda
     DATE data_doc_efectiva "NOT NULL"
-    DATE data_scad "nullable"
-    NUMBER_2 semn "CHECK IN -1,1"
+    DATE data_scad
+    NUMBER_2 semn "CHECK -1,1"
     NUMBER_17_2 amount_doc "NOT NULL"
-    NUMBER_17_2 amount_doc_ron "NOT NULL"
-    VARCHAR2_60 cod_client FK "-> CLIENTI"
+    NUMBER_17_2 amount_doc_ron
+    VARCHAR2_60 cod_client FK
     VARCHAR2_200 denumire_client
     VARCHAR2_20 clasa_client
   }
   LINII_DOC {
     NUMBER_19 id PK
-    CHAR_3 doc_type_xrp FK "FK compus"
-    VARCHAR2_30 nr_document FK "FK compus -> FISE"
-    VARCHAR2_50 item_code FK "-> MS_ITEMS"
+    CHAR_3 doc_type_xrp FK
+    VARCHAR2_30 nr_document FK
+    VARCHAR2_50 item_code FK
     NUMBER_13_2 item_qty
     NUMBER_9_2 xrp_linie_valoare_fara_tva
     NUMBER_9_2 xrp_linie_tva
@@ -84,10 +85,10 @@ erDiagram
     VARCHAR2_50 item_code UK
     VARCHAR2_350 item_name "NOT NULL"
     VARCHAR2_1000 item_description
-    NUMBER_19 brand_id FK "-> BRANDS"
-    NUMBER_19 season_id FK "-> SEASONS"
-    NUMBER_19 item_type_id FK "-> TYPE"
-    NUMBER_19 category_id FK "-> CATEGORY"
+    NUMBER_19 brand_id FK
+    NUMBER_19 season_id FK
+    NUMBER_19 item_type_id FK
+    NUMBER_19 category_id FK
     BINARY_DOUBLE vat
     NUMBER_9_2 last_cost_price
   }
@@ -114,7 +115,7 @@ erDiagram
     VARCHAR2_120 code UK
     VARCHAR2_40 description
     VARCHAR2_8 season_year
-    NUMBER_10 active "CHECK IN 0,1"
+    NUMBER_10 active "CHECK 0,1"
   }
 
   ZONE                ||--o{ CLIENTI              : "deserveste"

@@ -1,5 +1,9 @@
 ---
-title: Topologia retelei BD distribuite
+title: Topologia retelei BD distribuite (linii ortogonale)
+config:
+  flowchart:
+    curve: step
+    htmlLabels: true
 ---
 flowchart TB
 
@@ -44,34 +48,30 @@ flowchart TB
 
   end
 
-  %% Replicare prin MV refresh FAST (pull from VANZARI)
-  DISTR_LOGS -.->|"delta via<br/>MV log"| VAN_MV
-  CAT_LOGS -.->|"delta via<br/>MV log"| VAN_MV
-  VAN_JOB ==>|"refresh FAST"| VAN_MV
+  %% Index 0,1 = MV refresh (verde)
+  DISTR_LOGS -->|"delta via MV log"| VAN_MV
+  CAT_LOGS -->|"delta via MV log"| VAN_MV
+  %% Index 2 = job (portocaliu)
+  VAN_JOB -->|"refresh FAST"| VAN_MV
+  %% Index 3,4 = DB links (albastru)
+  VAN_FRAG -->|"lnk_distributie"| DISTR_M
+  VAN_FRAG -->|"lnk_catalog"| CAT_FRAG
 
-  %% DB links (initiate de VANZARI)
-  VAN_FRAG ==>|"lnk_distributie<br/>(citire master)"| DISTR_M
-  VAN_FRAG ==>|"lnk_catalog<br/>(citire master)"| CAT_FRAG
-
-  %% === Legenda ===
-  subgraph LEG["LEGENDA"]
-    direction TB
-    L1[("Tabela / Grup tabele")]
-    L2["MV log sau Job"]
-    L3[" "] ==>|"DB link (citire remote)"| L4[" "]
-    L5[" "] -.->|"MV refresh (delta)"| L6[" "]
-  end
+  %% Culori distincte pentru fiecare tip de legatura
+  linkStyle 0 stroke:#2e7d32,stroke-width:2px,stroke-dasharray:5 5
+  linkStyle 1 stroke:#2e7d32,stroke-width:2px,stroke-dasharray:5 5
+  linkStyle 2 stroke:#e65100,stroke-width:2px
+  linkStyle 3 stroke:#1565c0,stroke-width:2px
+  linkStyle 4 stroke:#1565c0,stroke-width:2px
 
   classDef pdb fill:#f9f9f9,stroke:#666,stroke-width:2px
   classDef distrStyle fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
   classDef catStyle fill:#fff4e1,stroke:#f57c00,stroke-width:2px
   classDef vanStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-  classDef helper fill:#f5f5f5,stroke:#aaa,stroke-width:1px,stroke-dasharray: 5 5
-  classDef legend fill:#fafafa,stroke:#999,stroke-width:1px
+  classDef helper fill:#f5f5f5,stroke:#aaa,stroke-width:2px,stroke-dasharray: 5 5
 
   class CDB pdb
   class DISTR_BOX,DISTR_M distrStyle
   class CAT_BOX,CAT_LOOK,CAT_FRAG catStyle
   class VAN_BOX,VAN_FRAG,VAN_MV vanStyle
   class DISTR_LOGS,CAT_LOGS,VAN_JOB helper
-  class LEG,L1,L2,L3,L4,L5,L6 legend

@@ -1,5 +1,8 @@
 ---
-title: Schema conceptuala locala - PDB CATALOG (cu fragmentare verticala BEA)
+title: Schema conceptuala locala - PDB CATALOG (fragmentare V BEA, ELK ortogonal)
+config:
+  layout: elk
+  look: classic
 ---
 erDiagram
   BRANDS {
@@ -28,7 +31,7 @@ erDiagram
     NUMBER_10 active "CHECK 0,1"
   }
   ITEMS_CORE {
-    NUMBER_19 id PK "fragm. V #1 (BEA)"
+    NUMBER_19 id PK
     VARCHAR2_50 item_code UK
     VARCHAR2_350 item_name "NOT NULL"
     NUMBER_19 brand_id FK
@@ -38,7 +41,7 @@ erDiagram
     NUMBER_10 active
   }
   ITEMS_EXTRA {
-    NUMBER_19 id PK "fragm. V #2 (BEA)"
+    NUMBER_19 id PK
     VARCHAR2_1000 item_description
     BINARY_DOUBLE vat
     NUMBER_9_2 last_cost_price
@@ -48,16 +51,16 @@ erDiagram
     VARCHAR2_10 um
   }
   V_ITEMS {
-    NUMBER_19 id "view: JOIN CORE/EXTRA"
-    VARCHAR2_50 item_code "transparenta verticala"
-    VARCHAR2_350 item_name "INSTEAD OF triggers"
-    VARCHAR2_1000 item_description "pt INSERT/UPDATE/DELETE"
+    NUMBER_19 id
+    VARCHAR2_50 item_code
+    VARCHAR2_350 item_name
+    VARCHAR2_1000 item_description
   }
 
-  BRANDS         ||--o{ ITEMS_CORE : "brand_id"
-  ITEMS_CATEGORY ||--o{ ITEMS_CORE : "category_id"
-  ITEMS_TYPE     ||--o{ ITEMS_CORE : "item_type_id"
-  ITEMS_SEASONS  ||--o{ ITEMS_CORE : "season_id"
-  ITEMS_CORE     ||--|| ITEMS_EXTRA : "id (1:1, ON DELETE CASCADE)"
-  ITEMS_CORE     ||..|| V_ITEMS    : "transparenta"
-  ITEMS_EXTRA    ||..|| V_ITEMS    : "transparenta"
+  BRANDS         ||--o{ ITEMS_CORE  : "brand_id"
+  ITEMS_CATEGORY ||--o{ ITEMS_CORE  : "category_id"
+  ITEMS_TYPE     ||--o{ ITEMS_CORE  : "item_type_id"
+  ITEMS_SEASONS  ||--o{ ITEMS_CORE  : "season_id"
+  ITEMS_CORE     ||--|| ITEMS_EXTRA : "id 1:1 CASCADE"
+  ITEMS_CORE     ||..|| V_ITEMS     : "transparenta"
+  ITEMS_EXTRA    ||..|| V_ITEMS     : "transparenta"

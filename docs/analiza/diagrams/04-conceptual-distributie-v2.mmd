@@ -1,5 +1,8 @@
 ---
-title: Schema conceptuala locala - PDB DISTRIBUTIE (Crow's foot)
+title: Schema conceptuala locala - PDB DISTRIBUTIE (Crow's foot, ELK ortogonal)
+config:
+  layout: elk
+  look: classic
 ---
 erDiagram
   ZONE {
@@ -7,7 +10,7 @@ erDiagram
     VARCHAR2_40 cod_zona UK
     VARCHAR2_80 den_zona "NOT NULL"
     VARCHAR2_10 tip_zona "NOT NULL"
-    NUMBER_19 parent_zona_id FK "self-ref"
+    NUMBER_19 parent_zona_id FK
   }
   AGENTI {
     NUMBER_19 id PK
@@ -25,7 +28,7 @@ erDiagram
     DATE end_date "CHECK > start"
   }
   CLIENTI_CONTACTE {
-    VARCHAR2_60 cod_client PK "PK = FK"
+    VARCHAR2_60 cod_client PK
     VARCHAR2_1000 email_client
     VARCHAR2_1000 email_agent
   }
@@ -34,7 +37,7 @@ erDiagram
     VARCHAR2_60 den_interval UK
   }
   INTERVALE_PLATA_ZILE {
-    NUMBER_19 id_interval PK "PK compus"
+    NUMBER_19 id_interval PK
     VARCHAR2_40 per_zile PK
     NUMBER_10 zile_start "NOT NULL"
     NUMBER_10 zile_end
@@ -54,11 +57,11 @@ erDiagram
     DATE end_date "CHECK > start"
   }
 
-  ZONE                ||--o{ CLIENTI             : "id_zona"
-  ZONE                ||--o{ ZONE                : "parent_zona_id"
-  ZONE                ||--o{ ZONE_AGENTI         : "id_zona"
-  AGENTI              ||--o{ ZONE_AGENTI         : "id_agent"
+  ZONE                ||--o{ CLIENTI              : "id_zona"
+  ZONE                ||--o{ ZONE                 : "parent_zona_id"
+  ZONE                ||--o{ ZONE_AGENTI          : "id_zona"
+  AGENTI              ||--o{ ZONE_AGENTI          : "id_agent"
   ZONE                ||--o{ ZONE_INTERVALE_PLATA : "id_zona"
   INTERVALE_PLATA     ||--o{ ZONE_INTERVALE_PLATA : "id_interval"
   INTERVALE_PLATA     ||--|{ INTERVALE_PLATA_ZILE : "id_interval"
-  CLIENTI             ||--o| CLIENTI_CONTACTE    : "cod_client"
+  CLIENTI             ||--o| CLIENTI_CONTACTE     : "cod_client"
