@@ -12,26 +12,27 @@ body {
 header {
     background: linear-gradient(135deg, #2563eb, #4f46e5);
     color: white;
-    padding: 30px 20px;
+    padding: 24px 20px;
     text-align: center;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 header h1 {
-    margin: 0 0 15px 0;
+    margin: 0 0 12px 0;
     font-weight: 600;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     letter-spacing: -0.025em;
 }
 
 nav {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 nav button {
-    padding: 10px 20px;
+    padding: 8px 14px;
     cursor: pointer;
     background-color: rgba(255, 255, 255, 0.15);
     color: white;
@@ -39,7 +40,7 @@ nav button {
     border-radius: 8px;
     font-family: 'Inter', sans-serif;
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
     backdrop-filter: blur(4px);
 }
@@ -50,15 +51,15 @@ nav button:hover {
 }
 
 #api-status {
-    margin-top: 20px;
-    font-size: 0.85rem;
+    margin-top: 14px;
+    font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.8);
     font-weight: 500;
 }
 
 main {
-    padding: 40px 20px;
-    max-width: 1200px;
+    padding: 30px 20px;
+    max-width: 1800px;
     margin: 0 auto;
 }
 
@@ -67,70 +68,164 @@ main {
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .view-section h2 {
     margin-top: 0;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     color: #111827;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .view-section p {
     color: #4b5563;
     background: #e5e7eb;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     border-left: 4px solid #6b7280;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
+.view-section p code {
+    background: #d1d5db;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-family: 'Courier New', monospace;
+}
+
+/* Layout: split (tabel + formular) */
 .split-layout {
     display: flex;
-    gap: 30px;
+    gap: 24px;
     align-items: flex-start;
 }
 
 .split-layout>div:first-child {
     flex: 1;
     background: white;
-    padding: 24px;
+    padding: 20px;
     border-radius: 12px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    overflow-x: auto;
 }
 
+/* Layout: dual table (pentru catalog fragmente + MV comparatie) */
+.dual-table-layout {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.dual-table-layout > div {
+    flex: 1;
+    min-width: 0;
+    background: white;
+    padding: 14px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    overflow-x: auto;
+}
+
+.dual-table-layout th,
+.dual-table-layout td {
+    padding: 4px 5px;
+    font-size: 0.72rem;
+}
+
+.dual-table-layout th {
+    font-size: 0.62rem;
+}
+
+.dual-table-layout h3 {
+    margin-top: 0;
+    font-size: 1.05rem;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+
+/* Badges */
+.badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: #e0e7ff;
+    color: #3730a3;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.badge-green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* MV Refresh bar */
+.mv-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.btn-refresh-mv {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3);
+}
+
+.btn-refresh-mv:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.4);
+}
+
+#mv-status {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+/* Form card */
 .form-card {
     background: white;
-    padding: 24px;
+    padding: 20px;
     border-radius: 12px;
-    min-width: 300px;
+    min-width: 280px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border-top: 4px solid #2563eb;
 }
 
+/* Tables */
 table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
-th,
-td {
-    padding: 12px 16px;
+th, td {
+    padding: 6px 8px;
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
-    font-size: 0.95rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
 }
 
 th {
@@ -138,39 +233,73 @@ th {
     font-weight: 600;
     color: #374151;
     text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
 }
 
 tr:hover td {
     background-color: #f9fafb;
 }
 
+/* Action buttons in table */
+.action-cell {
+    white-space: nowrap;
+}
+
+.btn-edit, .btn-delete {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.15s;
+}
+
+.btn-edit {
+    background: #dbeafe;
+    margin-right: 4px;
+}
+
+.btn-edit:hover {
+    background: #bfdbfe;
+}
+
+.btn-delete {
+    background: #fee2e2;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+}
+
+/* Reload buttons */
 button[onclick^="app.load"] {
-    padding: 8px 16px;
+    padding: 8px 14px;
     background-color: #f3f4f6;
     color: #374151;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: all 0.2s;
 }
 
-button[onclick^="app.load"]:hover {
+button[onclick^="app.load"]:hover,
+button[onclick^="app.refresh"]:hover {
     background-color: #e5e7eb;
 }
 
+/* Search input */
 .search-input {
     width: 100%;
     padding: 10px 12px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     box-sizing: border-box;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #1f2937;
     background-color: #f9fafb;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -183,10 +312,11 @@ button[onclick^="app.load"]:hover {
     background-color: white;
 }
 
+/* Form card elements */
 .form-card h3 {
     margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 1.2rem;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
     color: #1f2937;
 }
 
@@ -194,13 +324,13 @@ button[onclick^="app.load"]:hover {
 .form-card select {
     display: block;
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding: 10px 12px;
     box-sizing: border-box;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #1f2937;
     background-color: #f9fafb;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -216,18 +346,76 @@ button[onclick^="app.load"]:hover {
 
 .form-card button {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     background-color: #2563eb;
     color: white;
     border: none;
     border-radius: 6px;
     font-family: 'Inter', sans-serif;
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .form-card button:hover {
     background-color: #1d4ed8;
+}
+
+/* Pagination */
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.pagination-controls button {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: all 0.15s;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    background: #e5e7eb;
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font-size: 0.82rem;
+    color: #4b5563;
+    margin: 0 8px;
+}
+
+/* Sections wrapped in single div (no split) */
+.view-section > div:not(.split-layout):not(.dual-table-layout):not(.mv-action-bar) {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .split-layout, .dual-table-layout {
+        flex-direction: column;
+    }
+    .form-card {
+        min-width: unset;
+    }
+    nav {
+        gap: 4px;
+    }
+    nav button {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+    }
 }

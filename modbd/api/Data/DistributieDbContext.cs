@@ -9,5 +9,6 @@ namespace ModbdApi.Data
         
         public DbSet<Client> Clienti { get; set; }
         public DbSet<Zona> Zone { get; set; }
+        public DbSet<ClientContact> Contacte { get; set; }
     }
 }

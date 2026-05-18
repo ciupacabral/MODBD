@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MODBD - Interfață Simplificată</title>
+    <title>MODBD - Magazin de Incaltaminte - Interfata Frontend</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -13,15 +13,22 @@
         <h1>Magazin de incaltaminte</h1>
         <nav>
             <button onclick="app.showSection('local-distributie')">Local: Distribuție</button>
+            <button onclick="app.showSection('local-catalog')">Local: Catalog</button>
+            <button onclick="app.showSection('local-vanzari-ro')">Local: Vânzări RO</button>
+            <button onclick="app.showSection('local-vanzari-ext')">Local: Vânzări EXT</button>
             <button onclick="app.showSection('global-items')">Global: Produse</button>
             <button onclick="app.showSection('global-fise')">Global: Facturi</button>
+            <button onclick="app.showSection('global-linii')">Global: Linii Doc</button>
+            <button onclick="app.showSection('mv-replicare')">Replicare MV</button>
         </nav>
         <div id="api-status">Status API: Verificare...</div>
     </header>
 
     <main>
+        <!-- ==================== LOCAL: DISTRIBUTIE ==================== -->
         <section id="local-distributie" class="view-section">
-            <h2>Informatii client</h2>
+            <h2>Local: Distribuție — Clienți</h2>
+            <p>Cerința 1: Management direct pe PDB DISTRIBUȚIE. CRUD complet pe tabelul <code>CLIENTI</code>.</p>
             <div class="split-layout">
                 <div>
                     <input type="text" id="search-clienti" placeholder="🔍 Caută după Cod Client..." onkeyup="app.filterClienti()" class="search-input">
@@ -29,9 +36,12 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Cod</th>
-                                <th>Nume</th>
-                                <th>Tip</th>
+                                <th>Cod Client</th>
+                                <th>Denumire Client</th>
+                                <th>Tip Client</th>
+                                <th>ID Zona</th>
+                                <th>Start Date</th>
+                                <th>Acțiuni</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-clienti"></tbody>
@@ -40,7 +50,8 @@
                     <button onclick="app.loadClienti()">Reincarcă Tabel</button>
                 </div>
                 <div class="form-card">
-                    <h3>Adauga Client</h3>
+                    <h3 id="form-clienti-title">Adaugă Client</h3>
+                    <input type="hidden" id="c-edit-id" value="">
                     <input type="text" id="c-cod" placeholder="Cod Client (ex: CLI01)">
                     <input type="text" id="c-nume" placeholder="Nume Client">
                     <select id="c-tip">
@@ -50,13 +61,125 @@
                     <select id="c-zona">
                         <option value="1">Se incarca zonele...</option>
                     </select>
-                    <button onclick="app.addClient()">Salveaza</button>
+                    <button onclick="app.saveClient()">Salvează</button>
+                    <button onclick="app.cancelEditClient()" id="btn-cancel-client" style="display:none; background:#6b7280; margin-top:8px;">Anulează Editarea</button>
                 </div>
             </div>
         </section>
 
+        <!-- ==================== LOCAL: CATALOG (fragmente verticale) ==================== -->
+        <section id="local-catalog" class="view-section" style="display:none;">
+            <h2>Local: Catalog — Fragmente Verticale</h2>
+            <p>Cerința 1 + 3: Management direct pe fragmentele verticale <code>ITEMS_CORE</code> și <code>ITEMS_EXTRA</code>. Modificările de aici se reflectă automat în view-ul global <code>V_ITEMS</code>.</p>
+            <div class="dual-table-layout">
+                <div>
+                    <h3>📦 ITEMS_CORE <span class="badge">Identitate + Clasificare</span></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item Code</th>
+                                <th>Item Name</th>
+                                <th>Brand ID</th>
+                                <th>Season ID</th>
+                                <th>Type ID</th>
+                                <th>Category ID</th>
+                                <th>Active</th>
+                                <th>Acțiuni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-items-core"></tbody>
+                    </table>
+                    <div id="pagination-items-core" class="pagination-controls"></div>
+                    <button onclick="app.loadItemsCore()">Reincarcă</button>
+                </div>
+                <div>
+                    <h3>📋 ITEMS_EXTRA <span class="badge">Comercial + Fizic</span></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Descriere</th>
+                                <th>TVA</th>
+                                <th>Preț Cost</th>
+                                <th>Barcode</th>
+                                <th>Cod Furnizor</th>
+                                <th>Greutate</th>
+                                <th>UM</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-items-extra"></tbody>
+                    </table>
+                    <div id="pagination-items-extra" class="pagination-controls"></div>
+                    <button onclick="app.loadItemsExtra()">Reincarcă</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== LOCAL: VANZARI RO ==================== -->
+        <section id="local-vanzari-ro" class="view-section" style="display:none;">
+            <h2>Local: Vânzări RO — Fragment Orizontal</h2>
+            <p>Cerința 1 + 3: Vizualizare directă pe fragmentul <code>FISE_CLIENTI_RO</code> (doar facturi cu moneda = RON). Predicat de fragmentare: <code>CHECK (moneda = 'RON')</code>.</p>
+            <div>
+                <input type="text" id="search-fise-ro" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFiseRo()" class="search-input">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nr Document</th>
+                            <th>Tip Doc</th>
+                            <th>Doc Type XRP</th>
+                            <th>Data Doc</th>
+                            <th>Semn</th>
+                            <th>Moneda</th>
+                            <th>Valoare</th>
+                            <th>Val. RON</th>
+                            <th>Cod Client</th>
+                            <th>Client</th>
+                            <th>Clasă</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-fise-ro"></tbody>
+                </table>
+                <div id="pagination-fise-ro" class="pagination-controls"></div>
+                <button onclick="app.loadFiseRo()">Reincarcă Tabel</button>
+            </div>
+        </section>
+
+        <!-- ==================== LOCAL: VANZARI EXT ==================== -->
+        <section id="local-vanzari-ext" class="view-section" style="display:none;">
+            <h2>Local: Vânzări EXT — Fragment Orizontal</h2>
+            <p>Cerința 1 + 3: Vizualizare directă pe fragmentul <code>FISE_CLIENTI_EXT</code> (doar facturi cu moneda ≠ RON: EUR, USD, CZK). Predicat de fragmentare: <code>CHECK (moneda <> 'RON')</code>.</p>
+            <div>
+                <input type="text" id="search-fise-ext" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFiseExt()" class="search-input">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nr Document</th>
+                            <th>Tip Doc</th>
+                            <th>Doc Type XRP</th>
+                            <th>Data Doc</th>
+                            <th>Semn</th>
+                            <th>Moneda</th>
+                            <th>Valoare</th>
+                            <th>Val. RON</th>
+                            <th>Cod Client</th>
+                            <th>Client</th>
+                            <th>Clasă</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-fise-ext"></tbody>
+                </table>
+                <div id="pagination-fise-ext" class="pagination-controls"></div>
+                <button onclick="app.loadFiseExt()">Reincarcă Tabel</button>
+            </div>
+        </section>
+
+        <!-- ==================== GLOBAL: PRODUSE ==================== -->
         <section id="global-items" class="view-section" style="display:none;">
-            <h2>Vizualizare Globala - Produse</h2>
+            <h2>Vizualizare Globală — Produse (V_ITEMS)</h2>
+            <p>Cerințele 2 + 4: View-ul <code>V_ITEMS</code> face un JOIN între <code>ITEMS_CORE</code> și <code>ITEMS_EXTRA</code> (transparență verticală). Inserțiile trec prin trigger-ul <code>INSTEAD OF</code> care împarte datele în ambele fragmente.</p>
             <div class="split-layout">
                 <div>
                     <table>
@@ -75,7 +198,7 @@
                     <button onclick="app.loadItems()">Reincarca Tabel</button>
                 </div>
                 <div class="form-card">
-                    <h3>Adauga Produs</h3>
+                    <h3>Adauga Produs (via V_ITEMS)</h3>
                     <input type="text" id="i-cod" placeholder="Cod Produs">
                     <input type="text" id="i-nume" placeholder="Nume Produs">
                     <input type="text" id="i-desc" placeholder="Descriere">
@@ -83,13 +206,15 @@
                         <option value="1">Activ</option>
                         <option value="0">Inactiv</option>
                     </select>
-                    <button onclick="app.addItem()">Salveaza</button>
+                    <button onclick="app.addItem()">Salvează</button>
                 </div>
             </div>
         </section>
 
+        <!-- ==================== GLOBAL: FACTURI ==================== -->
         <section id="global-fise" class="view-section" style="display:none;">
-            <h2>Vizualizare Globala - Facturi</h2>
+            <h2>Vizualizare Globală — Facturi (V_FISE_CLIENTI)</h2>
+            <p>Cerințele 2 + 4: View-ul <code>V_FISE_CLIENTI</code> face un UNION ALL între <code>fise_clienti_ro</code> și <code>fise_clienti_ext</code> (transparență orizontală). Trigger-ul <code>INSTEAD OF</code> rutează inserțiile pe baza monedei.</p>
             <div class="split-layout">
                 <div>
                     <input type="text" id="search-fise" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFise()" class="search-input">
@@ -97,10 +222,14 @@
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Nr Doc</th>
-                                <th>Tip</th>
+                                <th>Nr Document</th>
+                                <th>Doc Type</th>
                                 <th>Moneda</th>
                                 <th>Valoare</th>
+                                <th>Val. RON</th>
+                                <th>Cod Client</th>
+                                <th>Client</th>
+                                <th>Clasă</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-fise"></tbody>
@@ -109,7 +238,7 @@
                     <button onclick="app.loadFise()">Reincarca Tabel</button>
                 </div>
                 <div class="form-card">
-                    <h3>Adauga Factura</h3>
+                    <h3>Adauga Factura (via V_FISE_CLIENTI)</h3>
                     <input type="text" id="f-nr" placeholder="Nr Document">
                     <select id="f-moneda">
                         <option>RON</option>
@@ -117,7 +246,106 @@
                         <option>USD</option>
                     </select>
                     <input type="number" id="f-val" placeholder="Valoare" value="100">
-                    <button onclick="app.addFisa()">Salveaza</button>
+                    <button onclick="app.addFisa()">Salvează</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== GLOBAL: LINII DOCUMENTE ==================== -->
+        <section id="global-linii" class="view-section" style="display:none;">
+            <h2>Vizualizare Globală — Linii Documente (V_LINII_DOC)</h2>
+            <p>Cerința 2: View-ul <code>V_LINII_DOC</code> face un UNION ALL între <code>linii_doc_ro</code> și <code>linii_doc_ext</code> (fragment orizontal derivat).</p>
+            <div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tip Doc</th>
+                            <th>Nr Doc</th>
+                            <th>Cod Produs</th>
+                            <th>Cantitate</th>
+                            <th>Valoare fara TVA</th>
+                            <th>TVA</th>
+                            <th>Valoare Totala</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-linii"></tbody>
+                </table>
+                <div id="pagination-linii" class="pagination-controls"></div>
+                <button onclick="app.loadLinii()">Reincarcă Tabel</button>
+            </div>
+        </section>
+
+        <!-- ==================== REPLICARE MV ==================== -->
+        <section id="mv-replicare" class="view-section" style="display:none;">
+            <h2>Replicare — Materialized Views</h2>
+            <p>Cerințele 2 + 3: Comparație între tabelul master <code>CLIENTI</code> (PDB DISTRIBUȚIE) și replica <code>MV_CLIENTI</code> (PDB VÂNZĂRI). Butonul Refresh apelează <code>DBMS_MVIEW.REFRESH</code> pentru sincronizare.</p>
+            <div class="mv-action-bar">
+                <button onclick="app.refreshMv()" class="btn-refresh-mv">🔄 Refresh Materialized Views</button>
+                <span id="mv-status"></span>
+            </div>
+            <div class="dual-table-layout">
+                <div>
+                    <h3>📗 Master: CLIENTI <span class="badge badge-green">PDB DISTRIBUȚIE</span></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cod</th>
+                                <th>Nume</th>
+                                <th>Tip</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-mv-master"></tbody>
+                    </table>
+                    <div id="pagination-mv-master" class="pagination-controls"></div>
+                </div>
+                <div>
+                    <h3>📘 Replica: MV_CLIENTI <span class="badge badge-blue">PDB VÂNZĂRI</span></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cod</th>
+                                <th>Nume</th>
+                                <th>Tip</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-mv-replica"></tbody>
+                    </table>
+                    <div id="pagination-mv-replica" class="pagination-controls"></div>
+                </div>
+            </div>
+            <div class="dual-table-layout" style="margin-top: 30px;">
+                <div>
+                    <h3>📗 Master: ITEMS_CORE <span class="badge badge-green">PDB CATALOG</span></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cod Produs</th>
+                                <th>Nume Produs</th>
+                                <th>Activ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-mv-items-master"></tbody>
+                    </table>
+                    <div id="pagination-mv-items-master" class="pagination-controls"></div>
+                </div>
+                <div>
+                    <h3>📘 Replica: MV_ITEMS_CORE <span class="badge badge-blue">PDB VÂNZĂRI</span></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cod Produs</th>
+                                <th>Nume Produs</th>
+                                <th>Activ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-mv-items-replica"></tbody>
+                    </table>
+                    <div id="pagination-mv-items-replica" class="pagination-controls"></div>
                 </div>
             </div>
         </section>
