@@ -11,6 +11,8 @@ namespace ModbdApi.Data
         public DbSet<FisaRo> FiseRo { get; set; }
         public DbSet<FisaExt> FiseExt { get; set; }
         public DbSet<GlobalLinie> Linii { get; set; }
+        public DbSet<LinieRo> LiniiRo { get; set; }
+        public DbSet<LinieExt> LiniiExt { get; set; }
         public DbSet<MvClient> MvClienti { get; set; }
         public DbSet<MvItemCore> MvItemsCore { get; set; }
     }

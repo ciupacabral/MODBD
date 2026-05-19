@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:5050/api';
+const API_BASE = window.location.protocol === 'file:'
+    ? 'http://localhost:5050/api'
+    : '/api';
 
 const app = {
     init() {
@@ -11,7 +13,6 @@ const app = {
         document.querySelectorAll('.view-section').forEach(sec => sec.style.display = 'none');
         document.getElementById(id).style.display = 'block';
 
-        // Incarca datele corespunzatoare sectiunii selectate
         if (id === 'local-distributie') this.loadClienti();
         if (id === 'local-catalog') { this.loadItemsCore(); this.loadItemsExtra(); }
         if (id === 'local-vanzari-ro') this.loadFiseRo();
@@ -21,19 +22,19 @@ const app = {
         if (id === 'global-linii') this.loadLinii();
         if (id === 'global-documents') this.initDocumentForm();
         if (id === 'mv-replicare') {
-            this.loadMvMaster(); 
-            this.loadMvReplica(); 
-            this.loadMvItemsMaster(); 
-            this.loadMvItemsReplica(); 
+            this.loadMvMaster();
+            this.loadMvReplica();
+            this.loadMvItemsMaster();
+            this.loadMvItemsReplica();
         }
     },
 
     async checkApi() {
         try {
             const res = await fetch(`${API_BASE}/distributie/clienti?pageSize=1`).catch(() => null);
-            document.getElementById('api-status').innerText = (res && res.ok) ? 'Status API: Online ✅' : 'Status API: Offline ❌';
+            document.getElementById('api-status').innerText = (res && res.ok) ? 'Status API: Online' : 'Status API: Offline';
         } catch (e) {
-            document.getElementById('api-status').innerText = 'Status API: Offline ❌';
+            document.getElementById('api-status').innerText = 'Status API: Offline';
         }
     },
 
@@ -49,10 +50,6 @@ const app = {
         }
     },
 
-    // =====================================================================
-    // LOCAL: DISTRIBUTIE — Clienti (CRUD complet)
-    // =====================================================================
-
     async loadClienti(page = 1) {
         const tbody = document.getElementById('tbody-clienti');
         const searchInput = document.getElementById('search-clienti');
@@ -66,12 +63,12 @@ const app = {
                 <td>${r.idZona}</td><td>${r.startDate ? new Date(r.startDate).toLocaleDateString('ro-RO') : '-'}</td>
                 <td>${r.endDate ? new Date(r.endDate).toLocaleDateString('ro-RO') : '-'}</td>
                 <td class="action-cell">
-                    <button class="btn-edit" onclick="app.editClient(${r.id}, '${r.codClient}', '${r.denumireClient.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${r.tipClient}', ${r.idZona}, ${r.endDate ? `'${r.endDate}'` : 'null'})">✏️</button>
-                    <button class="btn-delete" onclick="app.deleteClient(${r.id})">🗑️</button>
+                    <button class="btn-edit" onclick="app.editClient(${r.id}, '${r.codClient}', '${r.denumireClient.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${r.tipClient}', ${r.idZona}, ${r.endDate ? `'${r.endDate}'` : 'null'})">Edit</button>
+                    <button class="btn-delete" onclick="app.deleteClient(${r.id})">X</button>
                 </td>
             </tr>`).join('');
             this.renderPagination('pagination-clienti', result.page, result.totalPages, 'app.loadClienti');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare incarcare</td></tr>'; }
     },
 
     filterClientiTimer: null,
@@ -87,7 +84,7 @@ const app = {
         document.getElementById('c-tip').value = tip;
         document.getElementById('c-zona').value = idZona;
         document.getElementById('c-end-date').value = endDate ? endDate.substring(0, 10) : '';
-        document.getElementById('form-clienti-title').innerText = 'Editează Client #' + id;
+        document.getElementById('form-clienti-title').innerText = 'Editeaza Client #' + id;
         document.getElementById('btn-cancel-client').style.display = 'block';
     },
 
@@ -96,7 +93,7 @@ const app = {
         document.getElementById('c-cod').value = '';
         document.getElementById('c-nume').value = '';
         document.getElementById('c-end-date').value = '';
-        document.getElementById('form-clienti-title').innerText = 'Adaugă Client';
+        document.getElementById('form-clienti-title').innerText = 'Adauga Client';
         document.getElementById('btn-cancel-client').style.display = 'none';
     },
 
@@ -112,13 +109,11 @@ const app = {
         };
 
         if (editId) {
-            // UPDATE existent
             await fetch(`${API_BASE}/distributie/clienti/${editId}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
             });
             this.cancelEditClient();
         } else {
-            // INSERT nou
             await fetch(`${API_BASE}/distributie/clienti`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
             });
@@ -129,18 +124,14 @@ const app = {
     },
 
     async deleteClient(id) {
-        if (!confirm('Sigur vrei să ștergi clientul #' + id + '?')) return;
+        if (!confirm('Sigur vrei sa stergi clientul #' + id + '?')) return;
         const response = await fetch(`${API_BASE}/distributie/clienti/${id}`, { method: 'DELETE' });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            alert(errorData.error || 'A apărut o eroare la ștergerea clientului.');
+            alert(errorData.error || 'A aparut o eroare la stergerea clientului.');
         }
         this.loadClienti();
     },
-
-    // =====================================================================
-    // LOCAL: CATALOG — Fragmente Verticale (items_core + items_extra)
-    // =====================================================================
 
     async loadItemsCore(page = 1) {
         const tbody = document.getElementById('tbody-items-core');
@@ -153,11 +144,11 @@ const app = {
                 <td>${r.itemTypeId ?? '-'}</td><td>${r.categoryId ?? '-'}</td>
                 <td>${r.active === 1 ? 'Da' : 'Nu'}</td>
                 <td class="action-cell">
-                    <button class="btn-delete" onclick="app.deleteItemCore(${r.id})">🗑️</button>
+                    <button class="btn-delete" onclick="app.deleteItemCore(${r.id})">X</button>
                 </td>
             </tr>`).join('');
             this.renderPagination('pagination-items-core', result.page, result.totalPages, 'app.loadItemsCore');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare incarcare</td></tr>'; }
     },
 
     async loadItemsExtra(page = 1) {
@@ -171,19 +162,15 @@ const app = {
                 <td>${r.supplierCode || '-'}</td><td>${r.weight ?? '-'}</td><td>${r.um || '-'}</td>
             </tr>`).join('');
             this.renderPagination('pagination-items-extra', result.page, result.totalPages, 'app.loadItemsExtra');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare incarcare</td></tr>'; }
     },
 
     async deleteItemCore(id) {
-        if (!confirm('Sigur vrei să ștergi produsul #' + id + '? (CASCADE va șterge și ITEMS_EXTRA)')) return;
+        if (!confirm('Sigur vrei sa stergi produsul #' + id + '? (CASCADE va sterge si ITEMS_EXTRA)')) return;
         await fetch(`${API_BASE}/catalog/items-core/${id}`, { method: 'DELETE' });
         this.loadItemsCore();
         this.loadItemsExtra();
     },
-
-    // =====================================================================
-    // LOCAL: VANZARI — Fragmente Orizontale (fise_ro + fise_ext)
-    // =====================================================================
 
     async loadFiseRo(page = 1) {
         const tbody = document.getElementById('tbody-fise-ro');
@@ -202,7 +189,7 @@ const app = {
                 <td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.clasaClient}</td>
             </tr>`).join('');
             this.renderPagination('pagination-fise-ro', result.page, result.totalPages, 'app.loadFiseRo');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="6">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="6">Eroare incarcare</td></tr>'; }
     },
 
     filterFiseRoTimer: null,
@@ -228,7 +215,7 @@ const app = {
                 <td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.clasaClient}</td>
             </tr>`).join('');
             this.renderPagination('pagination-fise-ext', result.page, result.totalPages, 'app.loadFiseExt');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="6">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="6">Eroare incarcare</td></tr>'; }
     },
 
     filterFiseExtTimer: null,
@@ -237,21 +224,97 @@ const app = {
         this.filterFiseExtTimer = setTimeout(() => this.loadFiseExt(1), 300);
     },
 
-    // =====================================================================
-    // GLOBAL: Produse (V_ITEMS) + Facturi (V_FISE_CLIENTI)
-    // =====================================================================
-
     async loadItems(page = 1) {
         const tbody = document.getElementById('tbody-items');
         try {
             const res = await fetch(`${API_BASE}/global/items?page=${page}&pageSize=15`);
             const result = await res.json();
             tbody.innerHTML = result.data.map(r => `<tr>
-                <td>${r.id}</td><td>${r.itemCode}</td><td>${r.itemName}</td>
-                <td>${r.description || ''}</td><td>${r.active === 1 ? 'Da' : 'Nu'}</td>
+                <td>${r.id}</td>
+                <td>${r.itemCode}</td>
+                <td>${r.itemName}</td>
+                <td>${r.itemDescription || '-'}</td>
+                <td>${r.brandId ?? '-'}</td>
+                <td>${r.seasonId ?? '-'}</td>
+                <td>${r.itemTypeId ?? '-'}</td>
+                <td>${r.categoryId ?? '-'}</td>
+                <td>${r.vat ?? '-'}</td>
+                <td>${r.lastCostPrice ?? '-'}</td>
+                <td>${r.mainBarcode || '-'}</td>
+                <td>${r.supplierCode || '-'}</td>
+                <td>${r.weight ?? '-'}</td>
+                <td>${r.um || '-'}</td>
+                <td>${r.active === 1 ? 'Da' : 'Nu'}</td>
+                <td class="action-cell">
+                    <button class="btn-edit" onclick="app.editItem(${r.id}, ${JSON.stringify(r).replace(/"/g, '&quot;')})">Edit</button>
+                </td>
             </tr>`).join('');
             this.renderPagination('pagination-items', result.page, result.totalPages, 'app.loadItems');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="16">Eroare incarcare</td></tr>'; }
+    },
+
+    editItem(id, r) {
+        document.getElementById('i-edit-id').value = id;
+        document.getElementById('i-cod').value = r.itemCode || '';
+        document.getElementById('i-nume').value = r.itemName || '';
+        document.getElementById('i-desc').value = r.itemDescription || '';
+        document.getElementById('i-brand').value = r.brandId ?? '';
+        document.getElementById('i-season').value = r.seasonId ?? '';
+        document.getElementById('i-type').value = r.itemTypeId ?? '';
+        document.getElementById('i-cat').value = r.categoryId ?? '';
+        document.getElementById('i-vat').value = r.vat ?? '';
+        document.getElementById('i-cost').value = r.lastCostPrice ?? '';
+        document.getElementById('i-barcode').value = r.mainBarcode || '';
+        document.getElementById('i-supplier').value = r.supplierCode || '';
+        document.getElementById('i-weight').value = r.weight ?? '';
+        document.getElementById('i-um').value = r.um || '';
+        document.getElementById('i-activ').value = r.active ?? 1;
+        document.getElementById('form-items-title').innerText = 'Editeaza Produs #' + id;
+        document.getElementById('btn-cancel-item').style.display = 'block';
+    },
+
+    cancelEditItem() {
+        document.getElementById('i-edit-id').value = '';
+        ['i-cod','i-nume','i-desc','i-brand','i-season','i-type','i-cat',
+         'i-vat','i-cost','i-barcode','i-supplier','i-weight','i-um'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('i-activ').value = '1';
+        document.getElementById('form-items-title').innerText = 'Adauga Produs (via V_ITEMS)';
+        document.getElementById('btn-cancel-item').style.display = 'none';
+    },
+
+    async saveItem() {
+        const editId = document.getElementById('i-edit-id').value;
+        const body = {
+            itemCode:      document.getElementById('i-cod').value,
+            itemName:      document.getElementById('i-nume').value,
+            itemDescription: document.getElementById('i-desc').value || null,
+            brandId:       parseInt(document.getElementById('i-brand').value) || null,
+            seasonId:      parseInt(document.getElementById('i-season').value) || null,
+            itemTypeId:    parseInt(document.getElementById('i-type').value) || null,
+            categoryId:    parseInt(document.getElementById('i-cat').value) || null,
+            vat:           parseFloat(document.getElementById('i-vat').value) || null,
+            lastCostPrice: parseFloat(document.getElementById('i-cost').value) || null,
+            mainBarcode:   document.getElementById('i-barcode').value || null,
+            supplierCode:  document.getElementById('i-supplier').value || null,
+            weight:        parseFloat(document.getElementById('i-weight').value) || null,
+            um:            document.getElementById('i-um').value || null,
+            active:        parseInt(document.getElementById('i-activ').value)
+        };
+
+        if (editId) {
+            await fetch(`${API_BASE}/global/items/${editId}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            this.cancelEditItem();
+        } else {
+            await fetch(`${API_BASE}/global/items`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            this.cancelEditItem();
+        }
+        this.loadItems();
     },
 
     async loadFise(page = 1) {
@@ -272,7 +335,7 @@ const app = {
                 <td>${r.codClient}</td><td>${r.denumireClient}</td><td>${r.clasaClient}</td>
             </tr>`).join('');
             this.renderPagination('pagination-fise', result.page, result.totalPages, 'app.loadFise');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="5">Eroare incarcare</td></tr>'; }
     },
 
     filterFiseTimer: null,
@@ -280,10 +343,6 @@ const app = {
         clearTimeout(this.filterFiseTimer);
         this.filterFiseTimer = setTimeout(() => this.loadFise(1), 300);
     },
-
-    // =====================================================================
-    // GLOBAL: Linii Documente (V_LINII_DOC)
-    // =====================================================================
 
     async loadLinii(page = 1) {
         const tbody = document.getElementById('tbody-linii');
@@ -303,12 +362,8 @@ const app = {
                 <td>${r.linieProcTva ?? '-'}</td>
             </tr>`).join('');
             this.renderPagination('pagination-linii', result.page, result.totalPages, 'app.loadLinii');
-        } catch (e) { tbody.innerHTML = '<tr><td colspan="8">Eroare încărcare</td></tr>'; }
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="8">Eroare incarcare</td></tr>'; }
     },
-
-    // =====================================================================
-    // REPLICARE MV — Comparatie master vs replica
-    // =====================================================================
 
     async loadMvMaster(page = 1) {
         const tbody = document.getElementById('tbody-mv-master');
@@ -360,41 +415,23 @@ const app = {
 
     async refreshMv() {
         const status = document.getElementById('mv-status');
-        status.innerText = '⏳ Se actualizează MV-urile...';
+        status.innerText = 'Se actualizeaza MV-urile...';
         try {
             const res = await fetch(`${API_BASE}/admin/refresh-mv`, { method: 'POST' });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                status.innerHTML = `<span style="color:red">❌ ${data.error || 'Eroare la refresh'}</span>`;
+                status.innerHTML = `<span class="status-err">${data.error || 'Eroare la refresh'}</span>`;
             } else {
                 const data = await res.json();
-                status.innerHTML = `<span style="color:green">✅ ${data.message}</span>`;
+                status.innerHTML = `<span class="status-ok">${data.message}</span>`;
             }
             this.loadMvMaster();
             this.loadMvReplica();
             this.loadMvItemsMaster();
             this.loadMvItemsReplica();
         } catch (e) {
-            status.innerHTML = '<span style="color:red">❌ Eroare de rețea!</span>';
+            status.innerHTML = '<span class="status-err">Eroare de retea!</span>';
         }
-    },
-
-    // =====================================================================
-    // FORMULARE: Adaugare produse si facturi
-    // =====================================================================
-
-    async addItem() {
-        const body = {
-            itemCode: document.getElementById('i-cod').value,
-            itemName: document.getElementById('i-nume').value,
-            description: document.getElementById('i-desc').value,
-            active: parseInt(document.getElementById('i-activ').value)
-        };
-        await fetch(`${API_BASE}/global/items`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        this.loadItems();
-        document.getElementById('i-cod').value = '';
-        document.getElementById('i-nume').value = '';
-        document.getElementById('i-desc').value = '';
     },
 
     async addFisa() {
@@ -418,29 +455,22 @@ const app = {
         document.getElementById('f-plata-prin').value = '';
     },
 
-    // =====================================================================
-    // GLOBAL: Document cu Linii (INSERT atomic header + linii via INSERT ALL)
-    // =====================================================================
-
     async initDocumentForm() {
-        // Reset form
         const container = document.getElementById('linii-container');
         if (container && container.children.length === 0) {
             this.addLinieRow();
         }
-        // Populeaza dropdown-ul de clienti
         const clientSelect = document.getElementById('d-client');
         if (clientSelect && clientSelect.options.length <= 1) {
             try {
                 const res = await fetch(`${API_BASE}/distributie/clienti?page=1&pageSize=100`);
                 const result = await res.json();
-                clientSelect.innerHTML = '<option value="">— Selectează client —</option>' +
+                clientSelect.innerHTML = '<option value="">— Selecteaza client —</option>' +
                     result.data.map(c => `<option value="${c.codClient}">${c.codClient} — ${c.denumireClient}</option>`).join('');
             } catch (e) {
-                clientSelect.innerHTML = '<option value="">Eroare încărcare clienți</option>';
+                clientSelect.innerHTML = '<option value="">Eroare incarcare clienti</option>';
             }
         }
-        // Populeaza datalist-ul cu coduri de produse
         const datalist = document.getElementById('items-datalist');
         if (datalist && datalist.children.length === 0) {
             try {
@@ -472,7 +502,7 @@ const app = {
             <td><input type="number" class="l-lin-tva" step="0.01" placeholder="(=doc)" style="width: 90px;"></td>
             <td><input type="number" class="l-lin-pct" step="0.01" placeholder="(=doc)" style="width: 70px;"></td>
             <td class="l-total" style="font-weight: 600;">0.00</td>
-            <td><button type="button" class="btn-delete" onclick="app.removeLinieRow(this)">🗑️</button></td>
+            <td><button type="button" class="btn-delete" onclick="app.removeLinieRow(this)">X</button></td>
         `;
         tbody.appendChild(tr);
         this.recalcSuma();
@@ -509,11 +539,11 @@ const app = {
         const plataPrin = document.getElementById('d-plata-prin').value;
 
         if (!nrDocument) {
-            status.innerHTML = '<span style="color:red">❌ Nr Document obligatoriu</span>';
+            status.innerHTML = '<span class="status-err">Nr Document obligatoriu</span>';
             return;
         }
         if (!codClient) {
-            status.innerHTML = '<span style="color:red">❌ Selectează un client</span>';
+            status.innerHTML = '<span class="status-err">Selecteaza un client</span>';
             return;
         }
 
@@ -527,13 +557,10 @@ const app = {
             const tva = parseFloat(row.querySelector('.l-tva').value) || 0;
 
             if (!itemCode) {
-                status.innerHTML = '<span style="color:red">❌ Toate liniile trebuie să aibă un cod de produs</span>';
+                status.innerHTML = '<span class="status-err">Toate liniile trebuie sa aiba un cod de produs</span>';
                 return;
             }
 
-            // Câmpurile opționale — trimitem null dacă userul nu a completat, ca să
-            // lăsăm backend-ul să le deducă (procentTva din raportul TVA/val,
-            // linie* = doc* etc.).
             const pctRaw = row.querySelector('.l-pct').value;
             const wvatRaw = row.querySelector('.l-wvat').value;
             const linValRaw = row.querySelector('.l-lin-val').value;
@@ -555,7 +582,7 @@ const app = {
         }
 
         if (linii.length === 0) {
-            status.innerHTML = '<span style="color:red">❌ Adaugă cel puțin o linie</span>';
+            status.innerHTML = '<span class="status-err">Adauga cel putin o linie</span>';
             return;
         }
 
@@ -571,7 +598,7 @@ const app = {
             linii
         };
 
-        status.innerHTML = '<span style="color:#0284c7">⏳ Se trimite documentul...</span>';
+        status.innerHTML = '<span>Se trimite documentul...</span>';
         try {
             const res = await fetch(`${API_BASE}/global/documents`, {
                 method: 'POST',
@@ -580,11 +607,10 @@ const app = {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                status.innerHTML = `<span style="color:red">❌ ${data.error || 'Eroare la salvare'}</span>`;
+                status.innerHTML = `<span class="status-err">${data.error || 'Eroare la salvare'}</span>`;
                 return;
             }
-            status.innerHTML = `<span style="color:green">✅ Document salvat: ${data.nrDocument || nrDocument} (header + ${linii.length} linii într-o singură tranzacție)</span>`;
-            // Reset form
+            status.innerHTML = `<span class="status-ok">Document salvat: ${data.nrDocument || nrDocument} (header + ${linii.length} linii intr-o singura tranzactie)</span>`;
             document.getElementById('d-nr').value = '';
             document.getElementById('d-nr-initial').value = '';
             document.getElementById('d-data-scad').value = '';
@@ -593,13 +619,9 @@ const app = {
             this.addLinieRow();
             this.recalcSuma();
         } catch (e) {
-            status.innerHTML = `<span style="color:red">❌ Eroare de rețea: ${e.message}</span>`;
+            status.innerHTML = `<span class="status-err">Eroare de retea: ${e.message}</span>`;
         }
     },
-
-    // =====================================================================
-    // UTILITARE: Paginare
-    // =====================================================================
 
     renderPagination(elementId, current, total, functionName) {
         const el = document.getElementById(elementId);

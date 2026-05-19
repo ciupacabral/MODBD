@@ -12,10 +12,10 @@
     <header>
         <h1>Magazin de incaltaminte</h1>
         <nav>
-            <button onclick="app.showSection('local-distributie')">Local: Distribuție</button>
+            <button onclick="app.showSection('local-distributie')">Local: Distributie</button>
             <button onclick="app.showSection('local-catalog')">Local: Catalog</button>
-            <button onclick="app.showSection('local-vanzari-ro')">Local: Vânzări RO</button>
-            <button onclick="app.showSection('local-vanzari-ext')">Local: Vânzări EXT</button>
+            <button onclick="app.showSection('local-vanzari-ro')">Local: Vanzari RO</button>
+            <button onclick="app.showSection('local-vanzari-ext')">Local: Vanzari EXT</button>
             <button onclick="app.showSection('global-items')">Global: Produse</button>
             <button onclick="app.showSection('global-fise')">Global: Facturi</button>
             <button onclick="app.showSection('global-linii')">Global: Linii Doc</button>
@@ -26,13 +26,13 @@
     </header>
 
     <main>
-        <!-- ==================== LOCAL: DISTRIBUTIE ==================== -->
+        
         <section id="local-distributie" class="view-section">
-            <h2>Local: Distribuție — Clienți</h2>
-            <p>Cerința 1: Management direct pe PDB DISTRIBUȚIE. CRUD complet pe tabelul <code>CLIENTI</code>.</p>
+            <h2>Local: Distributie — Clienti</h2>
+            <p>Cerinta 1: Management direct pe PDB DISTRIBUTIE. CRUD complet pe tabelul <code>CLIENTI</code>.</p>
             <div class="split-layout">
                 <div>
-                    <input type="text" id="search-clienti" placeholder="🔍 Caută după Cod Client..." onkeyup="app.filterClienti()" class="search-input">
+                    <input type="text" id="search-clienti" placeholder="Cauta dupa Cod Client..." onkeyup="app.filterClienti()" class="search-input">
                     <table>
                         <thead>
                             <tr>
@@ -43,16 +43,16 @@
                                 <th>ID Zona</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
-                                <th>Acțiuni</th>
+                                <th>Actiuni</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-clienti"></tbody>
                     </table>
                     <div id="pagination-clienti" class="pagination-controls"></div>
-                    <button onclick="app.loadClienti()">Reincarcă Tabel</button>
+                    <button onclick="app.loadClienti()">Reincarca Tabel</button>
                 </div>
                 <div class="form-card">
-                    <h3 id="form-clienti-title">Adaugă Client</h3>
+                    <h3 id="form-clienti-title">Adauga Client</h3>
                     <input type="hidden" id="c-edit-id" value="">
                     <input type="text" id="c-cod" placeholder="Cod Client (ex: CLI01)">
                     <input type="text" id="c-nume" placeholder="Nume Client">
@@ -63,21 +63,21 @@
                     <select id="c-zona">
                         <option value="1">Se incarca zonele...</option>
                     </select>
-                    <label style="font-size: 0.85em; color: #475569;">End Date (opțional, lasă gol pentru clienți activi):</label>
-                    <input type="date" id="c-end-date" placeholder="End Date (opțional)">
-                    <button onclick="app.saveClient()">Salvează</button>
-                    <button onclick="app.cancelEditClient()" id="btn-cancel-client" style="display:none; background:#6b7280; margin-top:8px;">Anulează Editarea</button>
+                    <label>End Date (optional, lasa gol pentru clienti activi):</label>
+                    <input type="date" id="c-end-date" placeholder="End Date (optional)">
+                    <button onclick="app.saveClient()">Salveaza</button>
+                    <button onclick="app.cancelEditClient()" id="btn-cancel-client" style="display:none;">Anuleaza Editarea</button>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== LOCAL: CATALOG (fragmente verticale) ==================== -->
+        
         <section id="local-catalog" class="view-section" style="display:none;">
             <h2>Local: Catalog — Fragmente Verticale</h2>
-            <p>Cerința 1 + 3: Management direct pe fragmentele verticale <code>ITEMS_CORE</code> și <code>ITEMS_EXTRA</code>. Modificările de aici se reflectă automat în view-ul global <code>V_ITEMS</code>.</p>
+            <p>Cerinta 1 + 3: Management direct pe fragmentele verticale <code>ITEMS_CORE</code> si <code>ITEMS_EXTRA</code>. Modificarile de aici se reflecta automat in view-ul global <code>V_ITEMS</code>.</p>
             <div class="dual-table-layout">
                 <div>
-                    <h3>📦 ITEMS_CORE <span class="badge">Identitate + Clasificare</span></h3>
+                    <h3>ITEMS_CORE <span class="badge">Identitate + Clasificare</span></h3>
                     <table>
                         <thead>
                             <tr>
@@ -89,23 +89,23 @@
                                 <th>Type ID</th>
                                 <th>Category ID</th>
                                 <th>Active</th>
-                                <th>Acțiuni</th>
+                                <th>Actiuni</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-items-core"></tbody>
                     </table>
                     <div id="pagination-items-core" class="pagination-controls"></div>
-                    <button onclick="app.loadItemsCore()">Reincarcă</button>
+                    <button onclick="app.loadItemsCore()">Reincarca</button>
                 </div>
                 <div>
-                    <h3>📋 ITEMS_EXTRA <span class="badge">Comercial + Fizic</span></h3>
+                    <h3>ITEMS_EXTRA <span class="badge">Comercial + Fizic</span></h3>
                     <table>
                         <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>Descriere</th>
                                 <th>TVA</th>
-                                <th>Preț Cost</th>
+                                <th>Pret Cost</th>
                                 <th>Barcode</th>
                                 <th>Cod Furnizor</th>
                                 <th>Greutate</th>
@@ -115,23 +115,23 @@
                         <tbody id="tbody-items-extra"></tbody>
                     </table>
                     <div id="pagination-items-extra" class="pagination-controls"></div>
-                    <button onclick="app.loadItemsExtra()">Reincarcă</button>
+                    <button onclick="app.loadItemsExtra()">Reincarca</button>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== LOCAL: VANZARI RO ==================== -->
+        
         <section id="local-vanzari-ro" class="view-section" style="display:none;">
-            <h2>Local: Vânzări RO — Fragment Orizontal</h2>
-            <p>Cerința 1 + 3: Vizualizare directă pe fragmentul <code>FISE_CLIENTI_RO</code> (doar facturi cu moneda = RON). Predicat de fragmentare: <code>CHECK (moneda = 'RON')</code>.</p>
+            <h2>Local: Vanzari RO — Fragment Orizontal</h2>
+            <p>Cerinta 1 + 3: Vizualizare directa pe fragmentul <code>FISE_CLIENTI_RO</code> (doar facturi cu moneda = RON). Predicat de fragmentare: <code>CHECK (moneda = 'RON')</code>.</p>
             <div>
-                <input type="text" id="search-fise-ro" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFiseRo()" class="search-input">
+                <input type="text" id="search-fise-ro" placeholder="Cauta dupa Nr Document..." onkeyup="app.filterFiseRo()" class="search-input">
                 <table>
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Nr Document</th>
-                            <th>Nr Doc Inițial</th>
+                            <th>Nr Doc Initial</th>
                             <th>Tip Doc</th>
                             <th>Doc Type XRP</th>
                             <th>Data Doc</th>
@@ -143,28 +143,28 @@
                             <th>Plata Prin</th>
                             <th>Cod Client</th>
                             <th>Client</th>
-                            <th>Clasă</th>
+                            <th>Clasa</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-fise-ro"></tbody>
                 </table>
                 <div id="pagination-fise-ro" class="pagination-controls"></div>
-                <button onclick="app.loadFiseRo()">Reincarcă Tabel</button>
+                <button onclick="app.loadFiseRo()">Reincarca Tabel</button>
             </div>
         </section>
 
-        <!-- ==================== LOCAL: VANZARI EXT ==================== -->
+        
         <section id="local-vanzari-ext" class="view-section" style="display:none;">
-            <h2>Local: Vânzări EXT — Fragment Orizontal</h2>
-            <p>Cerința 1 + 3: Vizualizare directă pe fragmentul <code>FISE_CLIENTI_EXT</code> (doar facturi cu moneda ≠ RON: EUR, USD, CZK). Predicat de fragmentare: <code>CHECK (moneda <> 'RON')</code>.</p>
+            <h2>Local: Vanzari EXT — Fragment Orizontal</h2>
+            <p>Cerinta 1 + 3: Vizualizare directa pe fragmentul <code>FISE_CLIENTI_EXT</code> (doar facturi cu moneda ≠ RON: EUR, USD, CZK). Predicat de fragmentare: <code>CHECK (moneda <> 'RON')</code>.</p>
             <div>
-                <input type="text" id="search-fise-ext" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFiseExt()" class="search-input">
+                <input type="text" id="search-fise-ext" placeholder="Cauta dupa Nr Document..." onkeyup="app.filterFiseExt()" class="search-input">
                 <table>
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Nr Document</th>
-                            <th>Nr Doc Inițial</th>
+                            <th>Nr Doc Initial</th>
                             <th>Tip Doc</th>
                             <th>Doc Type XRP</th>
                             <th>Data Doc</th>
@@ -176,20 +176,20 @@
                             <th>Plata Prin</th>
                             <th>Cod Client</th>
                             <th>Client</th>
-                            <th>Clasă</th>
+                            <th>Clasa</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-fise-ext"></tbody>
                 </table>
                 <div id="pagination-fise-ext" class="pagination-controls"></div>
-                <button onclick="app.loadFiseExt()">Reincarcă Tabel</button>
+                <button onclick="app.loadFiseExt()">Reincarca Tabel</button>
             </div>
         </section>
 
-        <!-- ==================== GLOBAL: PRODUSE ==================== -->
+        
         <section id="global-items" class="view-section" style="display:none;">
-            <h2>Vizualizare Globală — Produse (V_ITEMS)</h2>
-            <p>Cerințele 2 + 4: View-ul <code>V_ITEMS</code> face un JOIN între <code>ITEMS_CORE</code> și <code>ITEMS_EXTRA</code> (transparență verticală). Inserțiile trec prin trigger-ul <code>INSTEAD OF</code> care împarte datele în ambele fragmente.</p>
+            <h2>Vizualizare Globala — Produse (V_ITEMS)</h2>
+            <p>Cerintele 2 + 4: View-ul <code>V_ITEMS</code> face un JOIN intre <code>ITEMS_CORE</code> si <code>ITEMS_EXTRA</code> (transparenta verticala). Insertiile trec prin trigger-ul <code>INSTEAD OF</code> care imparte datele in ambele fragmente.</p>
             <div class="split-layout">
                 <div>
                     <table>
@@ -199,7 +199,18 @@
                                 <th>Cod</th>
                                 <th>Nume</th>
                                 <th>Descriere</th>
+                                <th>Brand ID</th>
+                                <th>Season ID</th>
+                                <th>Tip ID</th>
+                                <th>Cat ID</th>
+                                <th>TVA (%)</th>
+                                <th>Pret Cost</th>
+                                <th>Barcode</th>
+                                <th>Furnizor</th>
+                                <th>Greutate</th>
+                                <th>UM</th>
                                 <th>Activ</th>
+                                <th>Actiuni</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-items"></tbody>
@@ -208,32 +219,44 @@
                     <button onclick="app.loadItems()">Reincarca Tabel</button>
                 </div>
                 <div class="form-card">
-                    <h3>Adauga Produs (via V_ITEMS)</h3>
-                    <input type="text" id="i-cod" placeholder="Cod Produs">
-                    <input type="text" id="i-nume" placeholder="Nume Produs">
+                    <h3 id="form-items-title">Adauga Produs (via V_ITEMS)</h3>
+                    <input type="hidden" id="i-edit-id" value="">
+                    <input type="text" id="i-cod" placeholder="Cod Produs *">
+                    <input type="text" id="i-nume" placeholder="Nume Produs *">
                     <input type="text" id="i-desc" placeholder="Descriere">
+                    <input type="number" id="i-brand" placeholder="Brand ID">
+                    <input type="number" id="i-season" placeholder="Season ID">
+                    <input type="number" id="i-type" placeholder="Tip ID (item_type_id)">
+                    <input type="number" id="i-cat" placeholder="Categorie ID">
+                    <input type="number" id="i-vat" step="0.01" placeholder="TVA (%)">
+                    <input type="number" id="i-cost" step="0.01" placeholder="Pret Cost">
+                    <input type="text" id="i-barcode" placeholder="Barcode principal">
+                    <input type="text" id="i-supplier" placeholder="Cod Furnizor">
+                    <input type="number" id="i-weight" step="0.01" placeholder="Greutate">
+                    <input type="text" id="i-um" placeholder="UM (ex: BUC)">
                     <select id="i-activ">
                         <option value="1">Activ</option>
                         <option value="0">Inactiv</option>
                     </select>
-                    <button onclick="app.addItem()">Salvează</button>
+                    <button onclick="app.saveItem()">Salveaza</button>
+                    <button id="btn-cancel-item" onclick="app.cancelEditItem()" style="display:none;">Anuleaza</button>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== GLOBAL: FACTURI ==================== -->
+        
         <section id="global-fise" class="view-section" style="display:none;">
-            <h2>Vizualizare Globală — Facturi (V_FISE_CLIENTI)</h2>
-            <p>Cerințele 2 + 4: View-ul <code>V_FISE_CLIENTI</code> face un UNION ALL între <code>fise_clienti_ro</code> și <code>fise_clienti_ext</code> (transparență orizontală). Trigger-ul <code>INSTEAD OF</code> rutează inserțiile pe baza monedei.</p>
+            <h2>Vizualizare Globala — Facturi (V_FISE_CLIENTI)</h2>
+            <p>Cerintele 2 + 4: View-ul <code>V_FISE_CLIENTI</code> face un UNION ALL intre <code>fise_clienti_ro</code> si <code>fise_clienti_ext</code> (transparenta orizontala). Trigger-ul <code>INSTEAD OF</code> ruteaza insertiile pe baza monedei.</p>
             <div class="split-layout">
                 <div>
-                    <input type="text" id="search-fise" placeholder="🔍 Caută după Nr Document..." onkeyup="app.filterFise()" class="search-input">
+                    <input type="text" id="search-fise" placeholder="Cauta dupa Nr Document..." onkeyup="app.filterFise()" class="search-input">
                     <table>
                         <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>Nr Document</th>
-                                <th>Nr Doc Inițial</th>
+                                <th>Nr Doc Initial</th>
                                 <th>Doc Type</th>
                                 <th>Data Doc</th>
                                 <th>Data Scad</th>
@@ -243,7 +266,7 @@
                                 <th>Plata Prin</th>
                                 <th>Cod Client</th>
                                 <th>Client</th>
-                                <th>Clasă</th>
+                                <th>Clasa</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-fise"></tbody>
@@ -254,31 +277,31 @@
                 <div class="form-card">
                     <h3>Adauga Factura (via V_FISE_CLIENTI)</h3>
                     <input type="text" id="f-nr" placeholder="Nr Document">
-                    <input type="text" id="f-nr-initial" placeholder="Nr Doc Inițial (opțional)">
+                    <input type="text" id="f-nr-initial" placeholder="Nr Doc Initial (optional)">
                     <select id="f-moneda">
                         <option>RON</option>
                         <option>EUR</option>
                         <option>USD</option>
                     </select>
                     <input type="number" id="f-val" placeholder="Valoare" value="100">
-                    <label style="font-size: 0.85em; color: #475569;">Data Scadență (opțional):</label>
+                    <label>Data Scadenta (optional):</label>
                     <input type="date" id="f-data-scad">
                     <select id="f-plata-prin">
-                        <option value="">— Plata Prin (opțional) —</option>
-                        <option value="OP">OP - Ordin de plată</option>
+                        <option value="">— Plata Prin (optional) —</option>
+                        <option value="OP">OP - Ordin de plata</option>
                         <option value="CASH">CASH - Numerar</option>
                         <option value="CARD">CARD - Card bancar</option>
                         <option value="TRANSFER">TRANSFER</option>
                     </select>
-                    <button onclick="app.addFisa()">Salvează</button>
+                    <button onclick="app.addFisa()">Salveaza</button>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== GLOBAL: LINII DOCUMENTE ==================== -->
+        
         <section id="global-linii" class="view-section" style="display:none;">
-            <h2>Vizualizare Globală — Linii Documente (V_LINII_DOC)</h2>
-            <p>Cerința 2: View-ul <code>V_LINII_DOC</code> face un UNION ALL între <code>linii_doc_ro</code> și <code>linii_doc_ext</code> (fragment orizontal derivat).</p>
+            <h2>Vizualizare Globala — Linii Documente (V_LINII_DOC)</h2>
+            <p>Cerinta 2: View-ul <code>V_LINII_DOC</code> face un UNION ALL intre <code>linii_doc_ro</code> si <code>linii_doc_ext</code> (fragment orizontal derivat).</p>
             <div>
                 <table>
                     <thead>
@@ -288,12 +311,12 @@
                             <th>Nr Doc</th>
                             <th>Cod Produs</th>
                             <th>Cantitate</th>
-                            <th>Val. fără TVA (doc)</th>
+                            <th>Val. fara TVA (doc)</th>
                             <th>TVA (doc)</th>
                             <th>% TVA (doc)</th>
                             <th>Total (doc)</th>
                             <th>With VAT</th>
-                            <th>Val. fără TVA (linie)</th>
+                            <th>Val. fara TVA (linie)</th>
                             <th>TVA (linie)</th>
                             <th>% TVA (linie)</th>
                         </tr>
@@ -301,17 +324,17 @@
                     <tbody id="tbody-linii"></tbody>
                 </table>
                 <div id="pagination-linii" class="pagination-controls"></div>
-                <button onclick="app.loadLinii()">Reincarcă Tabel</button>
+                <button onclick="app.loadLinii()">Reincarca Tabel</button>
             </div>
         </section>
 
-        <!-- ==================== GLOBAL: DOCUMENT + LINII (atomic INSERT) ==================== -->
+        
         <section id="global-documents" class="view-section" style="display:none;">
-            <h2>Vizualizare Globală — Document cu Linii (Inserție Atomică)</h2>
-            <p>Cerința 4: Inserare atomică a unui document și a liniilor sale prin <code>V_FISE_CLIENTI</code> + <code>V_LINII_DOC</code>. Trigger-ul compound <code>trg_coerenta_sum_*</code> verifică la <code>AFTER STATEMENT</code> că <code>SUM(linii) = amount_doc</code>. Backend-ul folosește tehnica <code>INSERT ALL</code> pentru a insera toate liniile într-un singur statement, astfel încât trigger-ul de coerență nu raportează fals-pozitiv.</p>
-            <div class="form-card" style="max-width: 1100px;">
-                <h3>📄 Document Nou</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 8px;">
+            <h2>Vizualizare Globala — Document cu Linii (Insertie Atomica)</h2>
+            <p>Cerinta 4: Inserare atomica a unui document si a liniilor sale prin <code>V_FISE_CLIENTI</code> + <code>V_LINII_DOC</code>. Trigger-ul compound <code>trg_coerenta_sum_*</code> verifica la <code>AFTER STATEMENT</code> ca <code>SUM(linii) = amount_doc</code>. Backend-ul foloseste tehnica <code>INSERT ALL</code> pentru a insera toate liniile intr-un singur statement, astfel incat trigger-ul de coerenta nu raporteaza fals-pozitiv.</p>
+            <div class="form-card wide">
+                <h3>Document Nou</h3>
+                <div class="doc-grid-3">
                     <input type="text" id="d-nr" placeholder="Nr Document (ex: DOC2026001)">
                     <select id="d-moneda">
                         <option>RON</option>
@@ -319,28 +342,28 @@
                         <option>USD</option>
                     </select>
                     <select id="d-client">
-                        <option value="">Se încarcă clienții...</option>
+                        <option value="">Se incarca clientii...</option>
                     </select>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
-                    <input type="text" id="d-nr-initial" placeholder="Nr Doc Inițial (opțional)">
-                    <input type="date" id="d-data-scad" title="Data scadență (opțional)">
+                <div class="doc-grid-2">
+                    <input type="text" id="d-nr-initial" placeholder="Nr Doc Initial (optional)">
+                    <input type="date" id="d-data-scad" title="Data scadenta (optional)">
                     <select id="d-plata-prin">
-                        <option value="">— Plata Prin (opțional) —</option>
-                        <option value="OP">OP - Ordin de plată</option>
+                        <option value="">— Plata Prin (optional) —</option>
+                        <option value="OP">OP - Ordin de plata</option>
                         <option value="CASH">CASH - Numerar</option>
                         <option value="CARD">CARD - Card bancar</option>
                         <option value="TRANSFER">TRANSFER</option>
                     </select>
                 </div>
 
-                <h4 style="margin-top: 16px;">Linii Document <small style="color:#64748b; font-weight: normal;">(coloanele „linie" sunt opționale — dacă le lași goale, backend-ul copiază valorile de la nivel document)</small></h4>
+                <h4 class="linii-header">Linii Document <small>(coloanele „linie" sunt optionale — daca le lasi goale, backend-ul copiaza valorile de la nivel document)</small></h4>
                 <table id="linii-table">
                     <thead>
                         <tr>
                             <th>Cod Produs</th>
                             <th>Cant.</th>
-                            <th>Val. fără TVA (doc)</th>
+                            <th>Val. fara TVA (doc)</th>
                             <th>TVA (doc)</th>
                             <th>% TVA (opt)</th>
                             <th>With VAT (opt)</th>
@@ -354,29 +377,29 @@
                     <tbody id="linii-container"></tbody>
                 </table>
                 <datalist id="items-datalist"></datalist>
-                <button type="button" onclick="app.addLinieRow()" style="margin-top: 8px;">+ Adaugă linie</button>
+                <button type="button" class="btn-add-line" onclick="app.addLinieRow()">+ Adauga linie</button>
 
-                <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border-radius: 6px; border-left: 4px solid #0284c7;">
-                    <p style="margin: 0;"><strong>Sumă linii (calculată automat):</strong> <span id="suma-linii">0.00</span></p>
-                    <p style="margin: 4px 0 0 0;"><strong>Amount Doc (header):</strong> <span id="amount-doc">0.00</span> <em style="color: #475569;">— sincronizat cu suma liniilor (trigger-ul cere coerență)</em></p>
+                <div class="doc-sum-box">
+                    <p><strong>Suma linii (calculata automat):</strong> <span id="suma-linii">0.00</span></p>
+                    <p><strong>Amount Doc (header):</strong> <span id="amount-doc">0.00</span> <em>— sincronizat cu suma liniilor (trigger-ul cere coerenta)</em></p>
                 </div>
 
-                <button type="button" onclick="app.saveDocument()" style="margin-top: 12px; background: #16a34a;">💾 Salvează Document (atomic)</button>
-                <div id="doc-status" style="margin-top: 12px;"></div>
+                <button type="button" class="btn-save-doc" onclick="app.saveDocument()">Salveaza Document (atomic)</button>
+                <div id="doc-status"></div>
             </div>
         </section>
 
-        <!-- ==================== REPLICARE MV ==================== -->
+        
         <section id="mv-replicare" class="view-section" style="display:none;">
             <h2>Replicare — Materialized Views</h2>
-            <p>Cerințele 2 + 3: Comparație între tabelul master <code>CLIENTI</code> (PDB DISTRIBUȚIE) și replica <code>MV_CLIENTI</code> (PDB VÂNZĂRI). Butonul Refresh apelează <code>DBMS_MVIEW.REFRESH</code> pentru sincronizare.</p>
+            <p>Cerintele 2 + 3: Comparatie intre tabelul master <code>CLIENTI</code> (PDB DISTRIBUTIE) si replica <code>MV_CLIENTI</code> (PDB VANZARI). Butonul Refresh apeleaza <code>DBMS_MVIEW.REFRESH</code> pentru sincronizare.</p>
             <div class="mv-action-bar">
-                <button onclick="app.refreshMv()" class="btn-refresh-mv">🔄 Refresh Materialized Views</button>
+                <button onclick="app.refreshMv()" class="btn-refresh-mv">Refresh Materialized Views</button>
                 <span id="mv-status"></span>
             </div>
             <div class="dual-table-layout">
                 <div>
-                    <h3>📗 Master: CLIENTI <span class="badge badge-green">PDB DISTRIBUȚIE</span></h3>
+                    <h3>Master: CLIENTI <span class="badge badge-green">PDB DISTRIBUTIE</span></h3>
                     <table>
                         <thead>
                             <tr>
@@ -391,7 +414,7 @@
                     <div id="pagination-mv-master" class="pagination-controls"></div>
                 </div>
                 <div>
-                    <h3>📘 Replica: MV_CLIENTI <span class="badge badge-blue">PDB VÂNZĂRI</span></h3>
+                    <h3>Replica: MV_CLIENTI <span class="badge badge-blue">PDB VANZARI</span></h3>
                     <table>
                         <thead>
                             <tr>
@@ -406,9 +429,9 @@
                     <div id="pagination-mv-replica" class="pagination-controls"></div>
                 </div>
             </div>
-            <div class="dual-table-layout" style="margin-top: 30px;">
+            <div class="dual-table-layout" style="margin-top:24px;">
                 <div>
-                    <h3>📗 Master: ITEMS_CORE <span class="badge badge-green">PDB CATALOG</span></h3>
+                    <h3>Master: ITEMS_CORE <span class="badge badge-green">PDB CATALOG</span></h3>
                     <table>
                         <thead>
                             <tr>
@@ -423,7 +446,7 @@
                     <div id="pagination-mv-items-master" class="pagination-controls"></div>
                 </div>
                 <div>
-                    <h3>📘 Replica: MV_ITEMS_CORE <span class="badge badge-blue">PDB VÂNZĂRI</span></h3>
+                    <h3>Replica: MV_ITEMS_CORE <span class="badge badge-blue">PDB VANZARI</span></h3>
                     <table>
                         <thead>
                             <tr>

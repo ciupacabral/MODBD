@@ -13,8 +13,18 @@ namespace ModbdApi.DTOs
     {
         public string ItemCode { get; set; } = "";
         public string ItemName { get; set; } = "";
-        public string? Description { get; set; }
-        public int Active { get; set; } = 1;
+        public string? ItemDescription { get; set; }
+        public long? BrandId { get; set; }
+        public long? SeasonId { get; set; }
+        public long? ItemTypeId { get; set; }
+        public long? CategoryId { get; set; }
+        public double? Vat { get; set; }
+        public decimal? LastCostPrice { get; set; }
+        public string? MainBarcode { get; set; }
+        public string? SupplierCode { get; set; }
+        public decimal? Weight { get; set; }
+        public string? Um { get; set; }
+        public int? Active { get; set; } = 1;
     }
 
     public class FisaInput
